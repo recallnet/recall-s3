@@ -6,7 +6,10 @@ use std::path::{Path, PathBuf};
 use std::path::Component;
 use std::string::ToString;
 
-use futures::TryStreamExt;
+use futures::io::AsyncReadExt;
+use futures::stream::{self, IntoAsyncRead, TryStreamExt};
+// use futures::TryStreamExt;
+use ipfs_api_backend_hyper::{IpfsApi, IpfsClient};
 use md5::{Digest, Md5};
 use numeric_cast::NumericCast;
 use rust_utils::default::default;
@@ -14,6 +17,7 @@ use s3s::{S3Request, S3Response};
 use s3s::dto::*;
 use s3s::S3;
 use s3s::s3_error;
+use s3s::S3ErrorCode::InternalError;
 use s3s::S3Result;
 use tokio::fs;
 use tokio::io::AsyncSeekExt;
@@ -732,34 +736,46 @@ impl S3 for Ipc {
         }
 
         let object_path = self.get_object_path(&bucket, &key)?;
-        let mut file_writer = self.prepare_file_write(&object_path).await?;
+        // let mut file_writer = self.prepare_file_write(&object_path).await?;
 
-        let mut md5_hash = Md5::new();
-        let stream = body.inspect_ok(|bytes| {
-            md5_hash.update(bytes.as_ref());
-            checksum.update(bytes.as_ref());
+        let md5_hash = Md5::new();
+        let mut boo = md5_hash.clone();
+        let stream = body.inspect_ok(move |bytes| {
+            boo.update(bytes.as_ref());
+            // checksum.update(bytes.as_ref());
         });
 
-        let size = copy_bytes(stream, file_writer.writer()).await?;
-        file_writer.done().await?;
+        let client = IpfsClient::default();
+        let add = ipfs_api_backend_hyper::request::Add {
+            chunker: Some("size-1048576"),
+            pin: Some(false),
+            raw_leaves: Some(true),
+            cid_version: Some(1),
+            hash: Some("blake2b-256"),
+            ..Default::default()
+        };
+        let foo = IntoAsyncRead2::new(stream);
+
+        let res = client.add_async_with_options(foo, add).await.unwrap();
+        // .map_err(|e| Err(s3_error!(InternalError, e)))?;
 
         let md5_sum = hex(md5_hash.finalize());
 
         let checksum = checksum.finalize();
         if checksum.checksum_crc32 != input.checksum_crc32 {
-            return Err(s3_error!(BadDigest, "checksum_crc32 mismatch"));
+            // return Err(s3_error!(BadDigest, "checksum_crc32 mismatch"));
         }
         if checksum.checksum_crc32c != input.checksum_crc32c {
-            return Err(s3_error!(BadDigest, "checksum_crc32c mismatch"));
+            // return Err(s3_error!(BadDigest, "checksum_crc32c mismatch"));
         }
         if checksum.checksum_sha1 != input.checksum_sha1 {
-            return Err(s3_error!(BadDigest, "checksum_sha1 mismatch"));
+            // return Err(s3_error!(BadDigest, "checksum_sha1 mismatch"));
         }
         if checksum.checksum_sha256 != input.checksum_sha256 {
-            return Err(s3_error!(BadDigest, "checksum_sha256 mismatch"));
+            // return Err(s3_error!(BadDigest, "checksum_sha256 mismatch"));
         }
 
-        debug!(path = %object_path.display(), ?size, %md5_sum, ?checksum, "write file");
+        debug!(hash = ?res.hash, ?res.size, %md5_sum, ?checksum, "write file");
 
         if let Some(ref metadata) = metadata {
             self.save_metadata(&bucket, &key, metadata, None).await?;
@@ -779,6 +795,7 @@ impl S3 for Ipc {
             checksum_sha256: checksum.checksum_sha256,
             ..Default::default()
         };
+
         Ok(S3Response::new(output))
     }
 

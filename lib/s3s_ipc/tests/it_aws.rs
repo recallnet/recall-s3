@@ -67,7 +67,7 @@ fn config() -> &'static SdkConfig {
             secret_key: PathBuf::from_str(
                 "/home/sander/github/textileio/ipc/test-network/keys/alice.sk",
             )
-                .unwrap(),
+            .unwrap(),
             account_kind: AccountKind::Regular,
             sequence: 0,
             gas_limit: 10_000_000_000,
