@@ -2,11 +2,15 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use crate::bucket::BucketNameWithOwner;
 use bytestring::ByteString;
 use fendermint_actor_objectstore::Object;
+use fendermint_vm_message::query::FvmQueryHeight;
+use fvm_shared::address::Address;
 use hoku_provider::json_rpc::JsonRpcProvider;
 use hoku_sdk::machine::objectstore::{ObjectStore, QueryOptions};
-use hoku_signer::Signer;
+use hoku_sdk::machine::Machine;
+use hoku_signer::{Signer, Void};
 use s3s::dto::{ObjectKey, PartNumber};
 use s3s::{s3_error, S3Error, S3ErrorCode};
 use tendermint_rpc::Client;
@@ -70,5 +74,25 @@ where
         };
 
         Ok(object)
+    }
+    pub async fn get_bucket_address_by_alias(
+        &self,
+        bucket: &BucketNameWithOwner,
+    ) -> Result<Option<Address>, S3Error> {
+        let signer = &Void::new(bucket.owner());
+        let list = ObjectStore::list(self.provider.deref(), signer, FvmQueryHeight::Committed)
+            .await
+            .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
+
+        let alias = bucket.name();
+        for item in list {
+            if let Some(v) = item.metadata.get(crate::s3::ALIAS_METADATA_KEY) {
+                if v.eq(&alias) {
+                    return Ok(Some(item.address));
+                }
+            }
+        }
+
+        Ok(None)
     }
 }

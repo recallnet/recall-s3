@@ -18,5 +18,6 @@ pub use self::error::*;
 mod error;
 
 mod basin;
+mod bucket;
 mod s3;
 mod utils;
