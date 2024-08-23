@@ -895,6 +895,7 @@ dependencies = [
  "clap",
  "clap-verbosity-flag",
  "fendermint_actor_machine",
+ "fendermint_actor_objectstore",
  "fendermint_crypto",
  "fendermint_vm_message",
  "futures",
