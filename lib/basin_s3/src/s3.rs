@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 use std::ops::{Deref, Not};
-use std::pin::Pin;
 use std::str::FromStr;
-use std::task::{Context, Poll};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::utils::copy_bytes;
 use crate::utils::hex;
+use crate::utils::{copy_bytes, HashReader};
 use crate::Basin;
 
 use adm_provider::message::GasParams;
@@ -36,8 +34,8 @@ use s3s::S3;
 use s3s::{S3Request, S3Response};
 use tendermint_rpc::Client;
 use tokio::fs;
+use tokio::io::AsyncSeekExt;
 use tokio::io::AsyncWriteExt;
-use tokio::io::{AsyncRead, AsyncSeekExt, ReadBuf};
 use tokio_util::io::ReaderStream;
 use tracing::debug;
 use tracing::log::error;
@@ -130,9 +128,9 @@ where
 
             let part_path = self.get_upload_part_path(&upload_id, part_number);
             let reader = try_!(fs::File::open(&part_path).await);
-            let mut hasher_reader = HasherReader::new(reader);
-            let _ = try_!(tokio::io::copy(&mut hasher_reader, &mut file).await);
-            e_tag_hash.update(hasher_reader.finalize());
+            let mut hash_reader = HashReader::new(reader);
+            let _ = try_!(tokio::io::copy(&mut hash_reader, &mut file).await);
+            e_tag_hash.update(hash_reader.finalize());
             try_!(fs::remove_file(&part_path).await);
         }
 
@@ -849,40 +847,4 @@ where
 /// <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range>
 fn fmt_content_range(start: u64, end_inclusive: u64, size: u64) -> String {
     format!("bytes {start}-{end_inclusive}/{size}")
-}
-
-struct HasherReader<R> {
-    inner: R,
-    hasher: Md5,
-}
-
-impl<R> HasherReader<R> {
-    fn new(inner: R) -> Self {
-        Self {
-            inner,
-            hasher: <Md5 as Digest>::new(),
-        }
-    }
-
-    fn finalize(self) -> Vec<u8> {
-        self.hasher.finalize().to_vec()
-    }
-}
-
-impl<R: AsyncRead + Unpin> AsyncRead for HasherReader<R> {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        // Perform the read operation
-        let poll_result = Pin::new(&mut self.inner).poll_read(cx, buf);
-
-        if let Poll::Ready(Ok(())) = &poll_result {
-            // Update the hash with the data that was read
-            self.hasher.update(buf.filled());
-        }
-
-        poll_result
-    }
 }

@@ -349,7 +349,7 @@ async fn test_multipart() -> Result<()> {
         let body = ans.body.collect().await?.into_bytes();
 
         assert_eq!(content_length, content.len());
-        assert_eq!(e_tag, "\"1fa74741a623c6b6ac51f5eb5a4e7921-1\"".to_string());
+        assert_eq!(e_tag, "\"af77e80818f1ff6fa731c8877e8b52ec-1\"".to_string());
         assert_eq!(body.as_ref(), content.as_bytes());
     }
 
