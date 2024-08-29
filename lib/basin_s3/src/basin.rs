@@ -1,9 +1,14 @@
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use adm_provider::json_rpc::JsonRpcProvider;
+use adm_sdk::machine::objectstore::{ObjectStore, QueryOptions};
 use adm_signer::Signer;
-use s3s::dto::PartNumber;
+use bytestring::ByteString;
+use fendermint_actor_objectstore::Object;
+use s3s::dto::{ObjectKey, PartNumber};
+use s3s::{s3_error, S3Error, S3ErrorCode};
 use tendermint_rpc::Client;
 use uuid::Uuid;
 
@@ -40,5 +45,30 @@ where
     pub fn get_upload_part_path(&self, upload_id: &Uuid, part_number: PartNumber) -> PathBuf {
         self.root
             .join(format!(".upload-{upload_id}.part-{part_number}.json"))
+    }
+
+    pub async fn get_object(
+        &self,
+        machine: &ObjectStore,
+        key: &ObjectKey,
+    ) -> Result<Object, S3Error> {
+        let object_list = machine
+            .query(
+                self.provider.deref(),
+                QueryOptions {
+                    prefix: key.to_string(),
+                    ..Default::default()
+                },
+            )
+            .await
+            .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
+
+        let object = if let Some(object) = object_list.objects.into_iter().next() {
+            object.1
+        } else {
+            return Err(s3_error!(NoSuchKey));
+        };
+
+        Ok(object)
     }
 }

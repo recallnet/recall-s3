@@ -3,8 +3,8 @@ use std::ops::{Deref, Not};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::utils::copy_bytes;
 use crate::utils::hex;
+use crate::utils::{copy_bytes, HashReader};
 use crate::Basin;
 
 use adm_provider::message::GasParams;
@@ -43,6 +43,7 @@ use uuid::Uuid;
 
 static LAST_MODIFIED_METADATA_KEY: &str = "last_modified";
 static CREATION_DATE_METADATA_KEY: &str = "creation_date";
+static ETAG_METADATA_KEY: &str = "etag";
 
 #[async_trait::async_trait]
 impl<C, S> S3 for Basin<C, S>
@@ -115,6 +116,7 @@ where
         let mut file = try_!(TempFile::new().await);
 
         let mut cnt: i32 = 0;
+        let mut e_tag_hash = <Md5 as Digest>::new();
         for part in multipart_upload.parts.into_iter().flatten() {
             let part_number = part
                 .part_number
@@ -125,14 +127,18 @@ where
             }
 
             let part_path = self.get_upload_part_path(&upload_id, part_number);
-            let mut reader = try_!(fs::File::open(&part_path).await);
-            let _ = try_!(tokio::io::copy(&mut reader, &mut file).await);
-
+            let reader = try_!(fs::File::open(&part_path).await);
+            let mut hash_reader = HashReader::new(reader);
+            let _ = try_!(tokio::io::copy(&mut hash_reader, &mut file).await);
+            e_tag_hash.update(hash_reader.finalize());
             try_!(fs::remove_file(&part_path).await);
         }
 
         try_!(file.flush().await);
         try_!(file.rewind().await);
+
+        let md5_sum = hex(e_tag_hash.finalize());
+        let e_tag = format!("\"{md5_sum}-{cnt}\"");
 
         let mut wallet = match &self.wallet {
             Some(w) => w.clone(),
@@ -146,16 +152,19 @@ where
 
         let last_modified = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
         let _ = machine
-            .add_reader(
+            .add_from_path(
                 self.provider.deref(),
                 &mut wallet,
                 &key,
-                file,
+                file.file_path(),
                 AddOptions {
-                    metadata: HashMap::from([(
-                        LAST_MODIFIED_METADATA_KEY.to_string(),
-                        last_modified.to_string(),
-                    )]),
+                    metadata: HashMap::from([
+                        (
+                            LAST_MODIFIED_METADATA_KEY.to_string(),
+                            last_modified.to_string(),
+                        ),
+                        (ETAG_METADATA_KEY.to_string(), e_tag.to_string()),
+                    ]),
                     ..AddOptions::default()
                 },
             )
@@ -163,6 +172,7 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let output = CompleteMultipartUploadOutput {
+            e_tag: Some(e_tag),
             bucket: Some(bucket),
             key: Some(key),
             ..Default::default()
@@ -192,6 +202,8 @@ where
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
+
+        let src_object = self.get_object(&machine, &src_key).await?;
 
         let mut file = try_!(TempFile::new().await);
         let (writer, mut reader) = tokio::io::duplex(4096);
@@ -230,6 +242,14 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let last_modified = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
+
+        let e_tag = src_object
+            .metadata
+            .get(ETAG_METADATA_KEY)
+            .ok_or(S3Error::new(S3ErrorCode::Custom(ByteString::from(
+                "no etag".to_string(),
+            ))))?;
+
         let _ = machine
             .add_reader(
                 self.provider.deref(),
@@ -237,10 +257,13 @@ where
                 &dst_key,
                 file,
                 AddOptions {
-                    metadata: HashMap::from([(
-                        LAST_MODIFIED_METADATA_KEY.to_string(),
-                        last_modified.to_string(),
-                    )]),
+                    metadata: HashMap::from([
+                        (
+                            LAST_MODIFIED_METADATA_KEY.to_string(),
+                            last_modified.to_string(),
+                        ),
+                        (ETAG_METADATA_KEY.to_string(), e_tag.to_string()),
+                    ]),
                     ..AddOptions::default()
                 },
             )
@@ -418,23 +441,7 @@ where
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        let object_list = machine
-            .query(
-                self.provider.deref(),
-                QueryOptions {
-                    prefix: input.key.clone(),
-                    ..Default::default()
-                },
-            )
-            .await
-            .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
-
-        let object = if let Some(object) = object_list.objects.into_iter().next() {
-            object.1
-        } else {
-            return Err(s3_error!(NoSuchKey));
-        };
-
+        let object = self.get_object(&machine, &input.key).await?;
         let file_len = object.size as u64;
 
         let (content_length, content_range) = match input.range {
@@ -485,9 +492,15 @@ where
             .get(LAST_MODIFIED_METADATA_KEY)
             .map(|v| Timestamp::parse(TimestampFormat::EpochSeconds, v.as_str()).unwrap());
 
+        let e_tag = object
+            .metadata
+            .get(ETAG_METADATA_KEY)
+            .map(|v| v.to_string());
+
         let output = GetObjectOutput {
             body: Some(StreamingBlob::wrap(reader_stream)),
             content_length: Some(content_length_i64),
+            e_tag,
             content_range,
             last_modified,
             ..Default::default()
@@ -729,7 +742,9 @@ where
 
         let mut file = try_!(TempFile::new().await);
 
+        let mut md5_hash = <Md5 as Digest>::new();
         while let Some(Ok(v)) = body.next().await {
+            md5_hash.update(v.as_ref());
             try_!(file.write_all(&v).await);
         }
         try_!(file.flush().await);
@@ -740,11 +755,17 @@ where
             None => unreachable!(),
         };
 
+        let md5_sum = hex(md5_hash.finalize());
+        let e_tag = format!("\"{md5_sum}\"");
+
         let last_modified = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
-        let mut metadata = HashMap::from([(
-            LAST_MODIFIED_METADATA_KEY.to_string(),
-            last_modified.to_string(),
-        )]);
+        let mut metadata = HashMap::from([
+            (
+                LAST_MODIFIED_METADATA_KEY.to_string(),
+                last_modified.to_string(),
+            ),
+            (ETAG_METADATA_KEY.to_string(), e_tag.to_string()),
+        ]);
 
         if input.metadata.is_some() {
             for (key, value) in input.metadata.unwrap() {
@@ -753,11 +774,11 @@ where
         };
 
         let _tx = machine
-            .add_reader(
+            .add_from_path(
                 self.provider.deref(),
                 &mut wallet,
                 &key,
-                file,
+                file.file_path(),
                 AddOptions {
                     metadata,
                     ..AddOptions::default()
@@ -767,6 +788,7 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let output = PutObjectOutput {
+            e_tag: Some(e_tag),
             ..Default::default()
         };
 

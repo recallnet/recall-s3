@@ -26,7 +26,6 @@ use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client;
 
 use aws_sdk_s3::types::BucketLocationConstraint;
-use aws_sdk_s3::types::ChecksumMode;
 use aws_sdk_s3::types::CompletedMultipartUpload;
 use aws_sdk_s3::types::CompletedPart;
 use aws_sdk_s3::types::CreateBucketConfiguration;
@@ -35,6 +34,7 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use tokio::sync::Mutex;
 use tokio::sync::MutexGuard;
+use tokio::time::{sleep, Duration};
 use tracing::{debug, error};
 
 const DOMAIN_NAME: &str = "localhost:8014";
@@ -139,14 +139,9 @@ async fn create_bucket(c: &Client) -> Result<String> {
 
     let list_buckets_output = c.list_buckets().send().await?;
 
-    let bucket_name = list_buckets_output
-        .buckets
-        .unwrap()
-        .first()
-        .unwrap()
-        .clone()
-        .name
-        .unwrap();
+    let mut buckets = list_buckets_output.buckets.unwrap();
+    buckets.sort_by(|a, b| a.creation_date.unwrap().cmp(&b.creation_date.unwrap()));
+    let bucket_name = buckets.last().unwrap().clone().name.unwrap();
 
     debug!("created bucket: {bucket_name:?}");
     Ok(bucket_name)
@@ -247,7 +242,7 @@ async fn test_single_object() -> Result<()> {
 
     let c = Client::new(config().await);
     let key = "sample.txt";
-    let content = "hello world\n你好世界\n";
+    let content = "hello world\n你好世界\n"; // md5 = 4a944a9af55168f2e2063907c421b061
 
     let bucket = create_bucket(&c).await?;
 
@@ -260,20 +255,18 @@ async fn test_single_object() -> Result<()> {
             .send()
             .await?;
     }
+    // wait for object resolution
+    sleep(Duration::from_millis(2000)).await;
 
     {
-        let ans = c
-            .get_object()
-            .bucket(&bucket)
-            .key(key)
-            .checksum_mode(ChecksumMode::Enabled)
-            .send()
-            .await?;
+        let ans = c.get_object().bucket(&bucket).key(key).send().await?;
 
         let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
+        let e_tag = ans.e_tag.unwrap();
         let body = ans.body.collect().await?.into_bytes();
 
         assert_eq!(content_length, content.len());
+        assert_eq!(e_tag, "\"4a944a9af55168f2e2063907c421b061\"".to_string());
         assert_eq!(body.as_ref(), content.as_bytes());
     }
 
@@ -345,18 +338,84 @@ async fn test_multipart() -> Result<()> {
             .await?;
     }
 
+    // wait for object resolution
+    sleep(Duration::from_millis(2000)).await;
+
     {
         let ans = c.get_object().bucket(&bucket).key(key).send().await?;
 
         let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
+        let e_tag = ans.e_tag.unwrap();
         let body = ans.body.collect().await?.into_bytes();
 
         assert_eq!(content_length, content.len());
+        assert_eq!(e_tag, "\"af77e80818f1ff6fa731c8877e8b52ec-1\"".to_string());
         assert_eq!(body.as_ref(), content.as_bytes());
     }
 
     {
         delete_object(&c, &bucket, key).await?;
+        //delete_bucket(&c, bucket).await?;
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[tracing::instrument]
+async fn test_copy() -> Result<()> {
+    let _guard = serial().await;
+
+    let c = Client::new(config().await);
+    let key = "sample.txt";
+    let content = "hello world\n你好世界\n"; // md5 = 4a944a9af55168f2e2063907c421b061
+
+    let bucket = create_bucket(&c).await?;
+
+    {
+        let body = ByteStream::from_static(content.as_bytes());
+        c.put_object()
+            .bucket(&bucket)
+            .key(key)
+            .body(body)
+            .send()
+            .await?;
+    }
+    // wait for object resolution
+    sleep(Duration::from_millis(2000)).await;
+
+    {
+        c.copy_object()
+            .bucket(&bucket)
+            .key("sample-copy.txt")
+            .copy_source(format!("{}/{}", &bucket, &key))
+            .send()
+            .await?;
+    }
+
+    // wait for object resolution
+    sleep(Duration::from_millis(2000)).await;
+
+    {
+        let ans = c
+            .get_object()
+            .bucket(&bucket)
+            .key("sample-copy.txt")
+            .send()
+            .await?;
+
+        let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
+        let e_tag = ans.e_tag.unwrap();
+        let body = ans.body.collect().await?.into_bytes();
+
+        assert_eq!(content_length, content.len());
+        assert_eq!(e_tag, "\"4a944a9af55168f2e2063907c421b061\"".to_string());
+        assert_eq!(body.as_ref(), content.as_bytes());
+    }
+
+    {
+        delete_object(&c, &bucket, key).await?;
+        delete_object(&c, &bucket, "sample-copy.txt").await?;
         //delete_bucket(&c, bucket).await?;
     }
 

@@ -2,9 +2,6 @@ name: Publish Images
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - bcalza/ci
 
 jobs:
   publish:

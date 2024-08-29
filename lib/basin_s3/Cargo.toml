@@ -52,6 +52,7 @@ adm_provider = { git = "https://github.com/textileio/basin.git",  rev = "1cc2096
 adm_signer = { git = "https://github.com/textileio/basin.git",  rev = "1cc20965563d9d2046d8cc8b8ec81053d8d336de"}
 fendermint_vm_message = { git = "https://github.com/textileio/ipc.git", rev = "c1b54024da38080fba411f0ec292cf806e49f129" }
 fendermint_actor_machine = { git = "https://github.com/textileio/ipc.git", rev = "c1b54024da38080fba411f0ec292cf806e49f129" }
+fendermint_actor_objectstore = { git = "https://github.com/textileio/ipc.git", rev = "c1b54024da38080fba411f0ec292cf806e49f129" }
 fendermint_crypto = { git = "https://github.com/textileio/ipc.git", rev = "c1b54024da38080fba411f0ec292cf806e49f129" }
 tendermint-rpc = { version = "0.31.1", features = [
     "secp256k1",
