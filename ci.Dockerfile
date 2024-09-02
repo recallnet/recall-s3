@@ -1,16 +1,26 @@
 FROM rust:1.80-slim-bookworm as builder
+USER root
 
-RUN USER=root apt-get update && apt-get install --yes pkg-config libssl-dev ca-certificates
-RUN USER=root update-ca-certificates
-RUN USER=root mkdir /basin-s3
+ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
+
+COPY /root-config /root/
+RUN sed 's|/home/runner|/root|g' -i.bak /root/.ssh/config
+RUN mv /root/.gitconfig /etc/gitconfig
+
+RUN apt-get update && apt-get install --yes pkg-config libssl-dev ca-certificates ssh git
+RUN update-ca-certificates
+RUN mkdir /basin-s3
 WORKDIR /basin-s3
+
+RUN rm -rf ~/.ssh/known_hosts && \
+    ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
 COPY ./lib ./lib
 
 RUN rustup component add rustfmt
-RUN cargo build --features binary --release
+RUN --mount=type=ssh cargo build --features binary --release
 
 FROM debian:bookworm-slim
 
