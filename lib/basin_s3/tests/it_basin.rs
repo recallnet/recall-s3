@@ -4,13 +4,13 @@
     clippy::must_use_candidate, //
 )]
 
-use adm_provider::json_rpc::JsonRpcProvider;
-use adm_sdk::network::Network;
+use hoku_provider::json_rpc::JsonRpcProvider;
+use hoku_sdk::network::Network;
 
-use adm_signer::key::parse_secret_key;
-use adm_signer::AccountKind;
-use adm_signer::Wallet;
 use basin_s3::Basin;
+use hoku_signer::key::parse_secret_key;
+use hoku_signer::AccountKind;
+use hoku_signer::Wallet;
 use s3s::auth::SimpleAuth;
 use s3s::service::S3ServiceBuilder;
 use tempfile::tempdir;

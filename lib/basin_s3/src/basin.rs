@@ -2,11 +2,11 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use adm_provider::json_rpc::JsonRpcProvider;
-use adm_sdk::machine::objectstore::{ObjectStore, QueryOptions};
-use adm_signer::Signer;
 use bytestring::ByteString;
 use fendermint_actor_objectstore::Object;
+use hoku_provider::json_rpc::JsonRpcProvider;
+use hoku_sdk::machine::objectstore::{ObjectStore, QueryOptions};
+use hoku_signer::Signer;
 use s3s::dto::{ObjectKey, PartNumber};
 use s3s::{s3_error, S3Error, S3ErrorCode};
 use tendermint_rpc::Client;

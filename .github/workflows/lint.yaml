@@ -6,13 +6,25 @@ on:
       - main
   pull_request:
 
+env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+
 jobs:
   clippy:
     name: clippy
     runs-on: ubuntu-latest
     steps:
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+            ssh-private-key: |
+              ${{ secrets.IPC_DEPLOY_KEY }}
+              ${{ secrets.BUILTIN_ACTORS_DEPLOY_KEY }}
+              ${{ secrets.RUST_HOKU_DEPLOY_KEY }}
+
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+            submodules: recursive
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
