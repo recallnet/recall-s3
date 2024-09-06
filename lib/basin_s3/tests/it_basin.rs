@@ -3,41 +3,44 @@
     clippy::all, //
     clippy::must_use_candidate, //
 )]
-
-use hoku_provider::json_rpc::JsonRpcProvider;
-use hoku_sdk::network::Network;
-
-use basin_s3::Basin;
-use hoku_signer::key::parse_secret_key;
-use hoku_signer::AccountKind;
-use hoku_signer::Wallet;
-use s3s::auth::SimpleAuth;
-use s3s::service::S3ServiceBuilder;
-use tempfile::tempdir;
-use tokio::sync::OnceCell;
-
-use std::env;
-
+use anyhow::Result;
 use aws_config::SdkConfig;
 use aws_credential_types::provider::SharedCredentialsProvider;
 use aws_sdk_s3::config::Credentials;
 use aws_sdk_s3::config::Region;
 use aws_sdk_s3::primitives::ByteStream;
-use aws_sdk_s3::Client;
-
+use aws_sdk_s3::types::error::BucketAlreadyExists;
 use aws_sdk_s3::types::BucketLocationConstraint;
 use aws_sdk_s3::types::CompletedMultipartUpload;
 use aws_sdk_s3::types::CompletedPart;
 use aws_sdk_s3::types::CreateBucketConfiguration;
-
-use anyhow::Result;
+use aws_sdk_s3::Client;
+use basin_s3::Basin;
+use ethers::utils::hex::ToHexExt;
+use hoku_provider::json_rpc::JsonRpcProvider;
+use hoku_sdk::network::Network;
+use hoku_signer::key::parse_secret_key;
+use hoku_signer::AccountKind;
+use hoku_signer::Signer;
+use hoku_signer::Wallet;
+use ipc_api::evm::payload_to_evm_address;
 use once_cell::sync::Lazy;
+use s3s::auth::SimpleAuth;
+use s3s::service::S3ServiceBuilder;
+use std::env;
+use tempfile::tempdir;
 use tokio::sync::Mutex;
 use tokio::sync::MutexGuard;
+use tokio::sync::OnceCell;
 use tokio::time::{sleep, Duration};
 use tracing::{debug, error};
 
 const DOMAIN_NAME: &str = "localhost:8014";
+
+struct SdkConfigWithAddress {
+    sdk: SdkConfig,
+    address: String,
+}
 
 fn setup_tracing() {
     use tracing_subscriber::EnvFilter;
@@ -67,11 +70,11 @@ async fn get_wallet() -> Wallet {
     wallet
 }
 
-async fn config() -> &'static SdkConfig {
+async fn config() -> &'static SdkConfigWithAddress {
     static WALLET: OnceCell<Wallet> = OnceCell::const_new();
     let _ = WALLET.get_or_init(get_wallet).await;
 
-    static CONFIG: Lazy<SdkConfig> = Lazy::new(|| {
+    static CONFIG: Lazy<SdkConfigWithAddress> = Lazy::new(|| {
         setup_tracing();
 
         // Fake credentials
@@ -110,12 +113,20 @@ async fn config() -> &'static SdkConfig {
         let client = s3s_aws::Client::from(service.into_shared());
 
         // Setup aws sdk config
-        SdkConfig::builder()
+        let config = SdkConfig::builder()
             .credentials_provider(SharedCredentialsProvider::new(cred))
             .http_client(client)
             .region(Region::new("us-west-2"))
             .endpoint_url(format!("http://{DOMAIN_NAME}"))
-            .build()
+            .build();
+
+        let eth_address =
+            payload_to_evm_address(WALLET.get().unwrap().clone().address().payload()).unwrap();
+
+        SdkConfigWithAddress {
+            sdk: config,
+            address: eth_address.encode_hex_with_prefix(),
+        }
     });
     &CONFIG
 }
@@ -125,7 +136,7 @@ async fn serial() -> MutexGuard<'static, ()> {
     LOCK.lock().await
 }
 
-async fn create_bucket(c: &Client) -> Result<String> {
+async fn create_bucket(c: &Client, bucket: &str) -> Result<()> {
     let location = BucketLocationConstraint::UsWest2;
     let cfg = CreateBucketConfiguration::builder()
         .location_constraint(location)
@@ -133,18 +144,11 @@ async fn create_bucket(c: &Client) -> Result<String> {
 
     c.create_bucket()
         .create_bucket_configuration(cfg)
-        .bucket("foo")
+        .bucket(bucket)
         .send()
         .await?;
 
-    let list_buckets_output = c.list_buckets().send().await?;
-
-    let mut buckets = list_buckets_output.buckets.unwrap();
-    buckets.sort_by(|a, b| a.creation_date.unwrap().cmp(&b.creation_date.unwrap()));
-    let bucket_name = buckets.last().unwrap().clone().name.unwrap();
-
-    debug!("created bucket: {bucket_name:?}");
-    Ok(bucket_name)
+    Ok(())
 }
 
 async fn delete_object(c: &Client, bucket: &String, key: &str) -> Result<()> {
@@ -169,13 +173,41 @@ macro_rules! log_and_unwrap {
 
 #[tokio::test]
 #[tracing::instrument]
+async fn test_bucket_exists() -> Result<()> {
+    let config = config().await;
+    let c = Client::new(&config.sdk);
+
+    let bucket_str = "test-bucket-exists";
+
+    create_bucket(&c, bucket_str).await?;
+
+    assert!(create_bucket(&c, bucket_str)
+        .await
+        .err()
+        .unwrap()
+        .source()
+        .unwrap()
+        .source()
+        .unwrap()
+        .downcast_ref::<BucketAlreadyExists>()
+        .is_some());
+
+    Ok(())
+}
+
+#[tokio::test]
+#[tracing::instrument]
 async fn test_list_buckets() -> Result<()> {
-    let c = Client::new(config().await);
+    let config = config().await;
+    let c = Client::new(&config.sdk);
     let response1 = log_and_unwrap!(c.list_buckets().send().await);
     drop(response1);
 
-    let bucket1_str = create_bucket(&c).await?;
-    let bucket2_str = create_bucket(&c).await?;
+    let bucket1_str = "test-list-buckets-1";
+    let bucket2_str = "test-list-buckets-2";
+
+    create_bucket(&c, bucket1_str).await?;
+    create_bucket(&c, bucket2_str).await?;
 
     let response2 = log_and_unwrap!(c.list_buckets().send().await);
     let bucket_names: Vec<_> = response2
@@ -183,8 +215,8 @@ async fn test_list_buckets() -> Result<()> {
         .iter()
         .filter_map(|bucket| bucket.name())
         .collect();
-    assert!(bucket_names.contains(&bucket1_str.as_str()));
-    assert!(bucket_names.contains(&bucket2_str.as_str()));
+    assert!(bucket_names.contains(&bucket1_str));
+    assert!(bucket_names.contains(&bucket2_str));
 
     Ok(())
 }
@@ -192,8 +224,13 @@ async fn test_list_buckets() -> Result<()> {
 #[tokio::test]
 #[tracing::instrument]
 async fn test_list_objects_v2() -> Result<()> {
-    let c = Client::new(config().await);
-    let bucket_str = create_bucket(&c).await?;
+    let config = config().await;
+    let c = Client::new(&config.sdk);
+
+    let bucket = "test-list-objects";
+    let bucket_with_owner = format!("{}.{}", &config.address, bucket);
+
+    create_bucket(&c, bucket).await?;
 
     let test_prefix = "this/is/a/test/path/";
     let key1 = "this/is/a/test/path/file1.txt";
@@ -201,13 +238,13 @@ async fn test_list_objects_v2() -> Result<()> {
     {
         let content = "hello world\nनमस्ते दुनिया\n";
         c.put_object()
-            .bucket(&bucket_str)
+            .bucket(&bucket_with_owner)
             .key(key1)
             .body(ByteStream::from_static(content.as_bytes()))
             .send()
             .await?;
         c.put_object()
-            .bucket(&bucket_str)
+            .bucket(&bucket_with_owner)
             .key(key2)
             .body(ByteStream::from_static(content.as_bytes()))
             .send()
@@ -216,7 +253,7 @@ async fn test_list_objects_v2() -> Result<()> {
 
     let result = c
         .list_objects_v2()
-        .bucket(bucket_str)
+        .bucket(&bucket_with_owner)
         .prefix(test_prefix)
         .send()
         .await;
@@ -239,17 +276,20 @@ async fn test_list_objects_v2() -> Result<()> {
 #[tracing::instrument]
 async fn test_single_object() -> Result<()> {
     let _guard = serial().await;
+    let config = config().await;
+    let c = Client::new(&config.sdk);
 
-    let c = Client::new(config().await);
+    let bucket = "test-single-object";
+    let bucket_with_owner = format!("{}.{}", &config.address, bucket);
+
     let key = "sample.txt";
     let content = "hello world\n你好世界\n"; // md5 = 4a944a9af55168f2e2063907c421b061
 
-    let bucket = create_bucket(&c).await?;
-
+    create_bucket(&c, bucket).await?;
     {
         let body = ByteStream::from_static(content.as_bytes());
         c.put_object()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key(key)
             .body(body)
             .send()
@@ -259,7 +299,12 @@ async fn test_single_object() -> Result<()> {
     sleep(Duration::from_millis(2000)).await;
 
     {
-        let ans = c.get_object().bucket(&bucket).key(key).send().await?;
+        let ans = c
+            .get_object()
+            .bucket(&bucket_with_owner)
+            .key(key)
+            .send()
+            .await?;
 
         let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
         let e_tag = ans.e_tag.unwrap();
@@ -269,9 +314,8 @@ async fn test_single_object() -> Result<()> {
         assert_eq!(e_tag, "\"4a944a9af55168f2e2063907c421b061\"".to_string());
         assert_eq!(body.as_ref(), content.as_bytes());
     }
-
     {
-        delete_object(&c, &bucket, key).await?;
+        delete_object(&c, &bucket_with_owner, key).await?;
         //delete_bucket(&c, bucket).await?;
     }
 
@@ -283,9 +327,13 @@ async fn test_single_object() -> Result<()> {
 async fn test_multipart() -> Result<()> {
     let _guard = serial().await;
 
-    let c = Client::new(config().await);
+    let config = config().await;
+    let c = Client::new(&config.sdk);
 
-    let bucket = create_bucket(&c).await?;
+    let bucket = "test-multipart";
+    let bucket_with_owner = format!("{}.{}", &config.address, bucket);
+
+    create_bucket(&c, bucket).await?;
 
     let key = "sample-test.txt";
     let content = "abcdefghijklmnopqrstuvwxyz/0123456789/!@#$%^&*();\n";
@@ -293,7 +341,7 @@ async fn test_multipart() -> Result<()> {
     let upload_id = {
         let ans = c
             .create_multipart_upload()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key(key)
             .send()
             .await?;
@@ -307,7 +355,7 @@ async fn test_multipart() -> Result<()> {
 
         let ans = c
             .upload_part()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key(key)
             .upload_id(upload_id)
             .body(body)
@@ -330,7 +378,7 @@ async fn test_multipart() -> Result<()> {
 
         let _ = c
             .complete_multipart_upload()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key(key)
             .multipart_upload(upload)
             .upload_id(upload_id)
@@ -342,7 +390,12 @@ async fn test_multipart() -> Result<()> {
     sleep(Duration::from_millis(2000)).await;
 
     {
-        let ans = c.get_object().bucket(&bucket).key(key).send().await?;
+        let ans = c
+            .get_object()
+            .bucket(&bucket_with_owner)
+            .key(key)
+            .send()
+            .await?;
 
         let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
         let e_tag = ans.e_tag.unwrap();
@@ -354,7 +407,7 @@ async fn test_multipart() -> Result<()> {
     }
 
     {
-        delete_object(&c, &bucket, key).await?;
+        delete_object(&c, &bucket_with_owner, key).await?;
         //delete_bucket(&c, bucket).await?;
     }
 
@@ -366,16 +419,21 @@ async fn test_multipart() -> Result<()> {
 async fn test_copy() -> Result<()> {
     let _guard = serial().await;
 
-    let c = Client::new(config().await);
+    let config = config().await;
+    let c = Client::new(&config.sdk);
+
+    let bucket = "test-copy";
+    let bucket_with_owner = format!("{}.{}", &config.address, bucket);
+
     let key = "sample.txt";
     let content = "hello world\n你好世界\n"; // md5 = 4a944a9af55168f2e2063907c421b061
 
-    let bucket = create_bucket(&c).await?;
+    create_bucket(&c, bucket).await?;
 
     {
         let body = ByteStream::from_static(content.as_bytes());
         c.put_object()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key(key)
             .body(body)
             .send()
@@ -386,9 +444,9 @@ async fn test_copy() -> Result<()> {
 
     {
         c.copy_object()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key("sample-copy.txt")
-            .copy_source(format!("{}/{}", &bucket, &key))
+            .copy_source(format!("{}/{}", &bucket_with_owner, &key))
             .send()
             .await?;
     }
@@ -399,7 +457,7 @@ async fn test_copy() -> Result<()> {
     {
         let ans = c
             .get_object()
-            .bucket(&bucket)
+            .bucket(&bucket_with_owner)
             .key("sample-copy.txt")
             .send()
             .await?;
@@ -414,8 +472,8 @@ async fn test_copy() -> Result<()> {
     }
 
     {
-        delete_object(&c, &bucket, key).await?;
-        delete_object(&c, &bucket, "sample-copy.txt").await?;
+        delete_object(&c, &bucket_with_owner, key).await?;
+        delete_object(&c, &bucket_with_owner, "sample-copy.txt").await?;
         //delete_bucket(&c, bucket).await?;
     }
 

@@ -42,13 +42,19 @@ tracing = "0.1.37"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.17", optional = true, features = ["env-filter", "time"] }
 uuid = { version = "1.4.1", features = ["v4"] }
-
 anyhow = "1.0.80"
+bytestring = "1.3.1"
+async-tempfile = "0.5.0"
+tempfile = "3.10.1"
+homedir = "0.3.3"
+clap-verbosity-flag = "2.2.1"
+ethers = "2.0.14"
 
 fvm_shared = "4.1.0"
 hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git" }
 hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git"}
 hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git"}
+ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git" }
 fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git"}
 fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git" }
 fendermint_actor_objectstore = { git = "ssh://git@github.com/hokunet/ipc.git"}
@@ -58,11 +64,7 @@ tendermint-rpc = { version = "0.31.1", features = [
     "http-client",
     "websocket-client",
 ] }
-bytestring = "1.3.1"
-async-tempfile = "0.5.0"
-tempfile = "3.10.1"
-homedir = "0.3.3"
-clap-verbosity-flag = "2.2.1"
+
 
 [dev-dependencies]
 anyhow = { version = "1.0.73", features = ["backtrace"] }

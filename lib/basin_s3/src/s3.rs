@@ -1,21 +1,20 @@
 use std::collections::HashMap;
 use std::ops::{Deref, Not};
-use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::bucket::BucketNameWithOwner;
 use crate::utils::hex;
 use crate::utils::{copy_bytes, HashReader};
-use crate::Basin;
+use crate::{bucket, Basin};
 
 use async_tempfile::TempFile;
 use bytestring::ByteString;
+use ethers::utils::hex::ToHexExt;
 use fendermint_actor_machine::WriteAccess;
 use fendermint_vm_message::query::FvmQueryHeight;
 use futures::StreamExt;
 use futures::TryStreamExt;
-use fvm_shared::address::Address;
 use hoku_provider::message::GasParams;
-use hoku_sdk::machine;
 use hoku_sdk::machine::objectstore::AddOptions;
 use hoku_sdk::machine::objectstore::DeleteOptions;
 use hoku_sdk::machine::objectstore::GetOptions;
@@ -23,6 +22,7 @@ use hoku_sdk::machine::objectstore::ObjectStore;
 use hoku_sdk::machine::objectstore::QueryOptions;
 use hoku_sdk::machine::Machine;
 use hoku_signer::Signer;
+use ipc_api::evm::payload_to_evm_address;
 use md5::Digest;
 use md5::Md5;
 use s3s::dto::*;
@@ -44,6 +44,7 @@ use uuid::Uuid;
 static LAST_MODIFIED_METADATA_KEY: &str = "last_modified";
 static CREATION_DATE_METADATA_KEY: &str = "creation_date";
 static ETAG_METADATA_KEY: &str = "etag";
+pub static ALIAS_METADATA_KEY: &str = "alias";
 
 #[async_trait::async_trait]
 impl<C, S> S3 for Basin<C, S>
@@ -62,6 +63,7 @@ where
                 "AbortMultipartUpload is not implemented in read-only mode"
             ));
         }
+
         let AbortMultipartUploadInput { upload_id, .. } = req.input;
 
         let upload_id = Uuid::parse_str(&upload_id).map_err(|_| s3_error!(InvalidRequest))?;
@@ -107,6 +109,8 @@ where
             ..
         } = req.input;
 
+        let bucket = BucketNameWithOwner::from(bucket)?;
+
         let Some(multipart_upload) = multipart_upload else {
             return Err(s3_error!(InvalidPart));
         };
@@ -145,7 +149,9 @@ where
             None => unreachable!(),
         };
 
-        let address = try_!(Address::from_str(bucket.as_str()));
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -173,7 +179,7 @@ where
 
         let output = CompleteMultipartUploadOutput {
             e_tag: Some(e_tag),
-            bucket: Some(bucket),
+            bucket: Some(bucket.name()),
             key: Some(key),
             ..Default::default()
         };
@@ -192,14 +198,20 @@ where
                 ref bucket,
                 ref key,
                 ..
-            } => (bucket.to_string(), key.to_string()),
+            } => (
+                BucketNameWithOwner::from(bucket.to_string())?,
+                key.to_string(),
+            ),
         };
 
-        let (dst_bucket, dst_key) = (input.bucket, input.key);
+        let (dst_bucket, dst_key) = (BucketNameWithOwner::from(input.bucket)?, input.key);
 
         // Download object to a file
-        let address = try_!(Address::from_str(&src_bucket));
-        let machine = ObjectStore::attach(address)
+        let Some(src_address) = self.get_bucket_address_by_alias(&src_bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
+        let machine = ObjectStore::attach(src_address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -236,8 +248,11 @@ where
             None => unreachable!(),
         };
 
-        let address = try_!(Address::from_str(&dst_bucket));
-        let machine = ObjectStore::attach(address)
+        let Some(dst_address) = self.get_bucket_address_by_alias(&dst_bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
+        let machine = ObjectStore::attach(dst_address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -290,7 +305,7 @@ where
     // #[tracing::instrument]
     async fn create_bucket(
         &self,
-        _req: S3Request<CreateBucketInput>,
+        req: S3Request<CreateBucketInput>,
     ) -> S3Result<S3Response<CreateBucketOutput>> {
         if self.is_read_only {
             return Err(s3_error!(
@@ -299,20 +314,42 @@ where
             ));
         }
 
-        let creation_date = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
+        let bucket = req.input.bucket;
+        if !bucket::check_bucket_name(bucket.as_str()) {
+            return Err(s3_error!(InvalidBucketName));
+        }
 
         let mut wallet = match &self.wallet {
             Some(w) => w.clone(),
             None => unreachable!(),
         };
+
+        let eth_address = payload_to_evm_address(wallet.address().payload())
+            .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
+
+        let bucket = BucketNameWithOwner::from(format!(
+            "{}.{}",
+            eth_address.encode_hex_with_prefix(),
+            bucket
+        ))?;
+
+        if self.get_bucket_address_by_alias(&bucket).await?.is_some() {
+            return Err(s3_error!(BucketAlreadyExists));
+        }
+
+        let creation_date = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
+
         let (machine, _) = ObjectStore::new(
             self.provider.deref(),
             &mut wallet,
             WriteAccess::OnlyOwner,
-            HashMap::from([(
-                CREATION_DATE_METADATA_KEY.to_string(),
-                creation_date.to_string(),
-            )]),
+            HashMap::from([
+                (
+                    CREATION_DATE_METADATA_KEY.to_string(),
+                    creation_date.to_string(),
+                ),
+                (ALIAS_METADATA_KEY.to_string(), bucket.name()),
+            ]),
             GasParams::default(),
         )
         .await
@@ -362,10 +399,12 @@ where
             ));
         }
 
-        let bucket = req.input.bucket;
+        let bucket = BucketNameWithOwner::from(req.input.bucket)?;
         let key = req.input.key;
 
-        let address = try_!(Address::from_str(&bucket));
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -402,7 +441,10 @@ where
             ));
         }
 
-        let address = try_!(Address::from_str(&req.input.bucket));
+        let bucket = BucketNameWithOwner::from(req.input.bucket)?;
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -435,8 +477,12 @@ where
         req: S3Request<GetObjectInput>,
     ) -> S3Result<S3Response<GetObjectOutput>> {
         let input = req.input;
+        let bucket = BucketNameWithOwner::from(input.bucket)?;
 
-        let address = try_!(Address::from_str(&input.bucket));
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -514,15 +560,11 @@ where
         req: S3Request<HeadBucketInput>,
     ) -> S3Result<S3Response<HeadBucketOutput>> {
         let input = req.input;
+        let bucket = BucketNameWithOwner::from(input.bucket)?;
 
-        let Ok(address) = Address::from_str(&input.bucket) else {
-            return Ok(S3Response::new(HeadBucketOutput {
-                ..Default::default()
-            }));
+        let Some(_) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
         };
-        let _ = machine::info(self.provider.deref(), address, FvmQueryHeight::Committed)
-            .await
-            .map_err(|_| s3_error!(NoSuchBucket))?;
 
         Ok(S3Response::new(HeadBucketOutput {
             ..Default::default()
@@ -535,8 +577,12 @@ where
         req: S3Request<HeadObjectInput>,
     ) -> S3Result<S3Response<HeadObjectOutput>> {
         let input = req.input;
+        let bucket = BucketNameWithOwner::from(input.bucket)?;
 
-        let address = try_!(Address::from_str(&input.bucket));
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -605,11 +651,15 @@ where
                 .get(CREATION_DATE_METADATA_KEY)
                 .map(|v| Timestamp::parse(TimestampFormat::EpochSeconds, v.as_str()).unwrap());
 
-            let bucket_name = data.address.to_string();
+            let name = data
+                .metadata
+                .get(ALIAS_METADATA_KEY)
+                .cloned()
+                .or(Some(data.address.to_string()));
 
             let bucket = Bucket {
+                name,
                 creation_date,
-                name: Some(bucket_name),
             };
             buckets.push(bucket);
         }
@@ -646,8 +696,12 @@ where
         req: S3Request<ListObjectsV2Input>,
     ) -> S3Result<S3Response<ListObjectsV2Output>> {
         let input: ListObjectsV2Input = req.input;
+        let bucket = BucketNameWithOwner::from(input.bucket)?;
 
-        let address = try_!(Address::from_str(&input.bucket));
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -706,7 +760,7 @@ where
             delimiter: input.delimiter,
             common_prefixes: Some(common_prefixes),
             encoding_type: input.encoding_type,
-            name: Some(input.bucket),
+            name: Some(bucket.name()),
             prefix: input.prefix,
             ..Default::default()
         };
@@ -725,17 +779,23 @@ where
                 "PutObject is not implemented in read-only mode"
             ));
         }
+
         let input = req.input;
 
         let PutObjectInput {
             body, bucket, key, ..
         } = input;
 
+        let bucket = BucketNameWithOwner::from(bucket)?;
+
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
         let Some(mut body) = body else {
             return Err(s3_error!(IncompleteBody));
         };
 
-        let address = try_!(Address::from_str(bucket.as_str()));
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
