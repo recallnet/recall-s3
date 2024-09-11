@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::bucket::BucketNameWithOwner;
+
 use bytestring::ByteString;
+use encrypt::Kms;
 use fendermint_actor_objectstore::Object;
 use fendermint_vm_message::query::FvmQueryHeight;
 use fvm_shared::address::Address;
@@ -16,26 +18,30 @@ use s3s::{s3_error, S3Error, S3ErrorCode};
 use tendermint_rpc::Client;
 use uuid::Uuid;
 
-pub struct Basin<C: Client + Send + Sync, S: Signer> {
+pub struct Basin<C: Client + Send + Sync, S: Signer, K: Kms + Send + Sync> {
     pub root: PathBuf,
     pub provider: Arc<JsonRpcProvider<C>>,
+    pub kms: K,
     pub wallet: Option<S>,
     pub is_read_only: bool,
 }
 
-impl<C, S> Basin<C, S>
+impl<C, S, K> Basin<C, S, K>
 where
     C: Client + Send + Sync,
     S: Signer,
+    K: Kms + Send + Sync,
 {
     pub fn new(
         root: PathBuf,
         provider: JsonRpcProvider<C>,
+        kms: K,
         wallet: Option<S>,
     ) -> anyhow::Result<Self> {
         let is_read_only = wallet.is_none();
         Ok(Self {
             root,
+            kms,
             wallet,
             is_read_only,
             provider: Arc::new(provider),

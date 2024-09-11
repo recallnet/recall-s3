@@ -1,0 +1,29 @@
+[package]
+name = "encrypt"
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true
+
+[dependencies]
+async-trait = "0.1.73"
+hmac = "0.12"
+sha2 = "0.10"
+pin-project = "1.0"
+rand = { version= "0.8", features = ["getrandom"] }
+base64 = "0.22.1"
+reqwest = { version = "0.12.7", features = ["json", "rustls-tls"]}
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+anyhow = { version = "1.0.73", features = ["backtrace"] }
+aes-gcm = "0.10"
+aes = "0.8"
+hex = "0.4"
+generic-array = "1.1.0"
+dare = {git = "ssh://git@github.com/hokunet/dare.git"}
+hex-simd = "0.8.0"

@@ -3,16 +3,19 @@ use std::ops::{Deref, Not};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::bucket::BucketNameWithOwner;
-use crate::utils::hex;
-use crate::utils::{copy_bytes, HashReader};
+use crate::utils::{copy_bytes, DecryptingReader, HashReader};
+use crate::utils::{hex, StreamingBlobReader};
 use crate::{bucket, Basin};
 
 use async_tempfile::TempFile;
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use bytestring::ByteString;
+use dare::DAREDecryptor;
+use encrypt::{Kms, SealedObjectKey};
+use ethers::prelude::StreamExt;
 use ethers::utils::hex::ToHexExt;
 use fendermint_actor_machine::WriteAccess;
 use fendermint_vm_message::query::FvmQueryHeight;
-use futures::StreamExt;
 use futures::TryStreamExt;
 use hoku_provider::message::GasParams;
 use hoku_sdk::machine::objectstore::AddOptions;
@@ -25,6 +28,8 @@ use hoku_signer::Signer;
 use ipc_api::evm::payload_to_evm_address;
 use md5::Digest;
 use md5::Md5;
+use rand::rngs::OsRng;
+use rand::RngCore;
 use s3s::dto::*;
 use s3s::s3_error;
 use s3s::S3Error;
@@ -47,10 +52,11 @@ static ETAG_METADATA_KEY: &str = "etag";
 pub static ALIAS_METADATA_KEY: &str = "alias";
 
 #[async_trait::async_trait]
-impl<C, S> S3 for Basin<C, S>
+impl<C, S, K> S3 for Basin<C, S, K>
 where
     C: Client + Send + Sync + 'static,
     S: Signer + 'static,
+    K: Kms + Send + Sync + 'static,
 {
     // #[tracing::instrument]
     async fn abort_multipart_upload(
@@ -515,14 +521,14 @@ where
         };
 
         let (writer, reader) = tokio::io::duplex(4096);
-        let reader_stream = ReaderStream::new(reader);
 
         let provider = self.provider.clone();
+        let key = input.key.clone();
         tokio::spawn(async move {
             let _ = machine
                 .get(
                     provider.deref(),
-                    input.key.as_str(),
+                    key.as_str(),
                     writer,
                     GetOptions {
                         range,
@@ -544,6 +550,47 @@ where
             .get(ETAG_METADATA_KEY)
             .map(|v| v.to_string());
 
+        println!("content_length_i64={}", content_length_i64);
+
+        let is_encrypted = object.metadata.contains_key("sse_oek");
+        if is_encrypted {
+            let iv = object.metadata.get("sse_iv").unwrap().clone();
+            let oek = object.metadata.get("sse_oek").unwrap().clone();
+            let algorithm = object.metadata.get("sse_algorithm").unwrap().clone();
+            let sealed_object_key = SealedObjectKey::new(oek, iv, algorithm);
+
+            let master_key = object.metadata.get("sse_master_key").unwrap();
+            let encryption_key = object.metadata.get("sse_ek").unwrap();
+            let encryption_key_vec = STANDARD.decode(encryption_key).unwrap();
+            let encryption_key = self
+                .kms
+                .decrypt_encryption_key(master_key, &encryption_key_vec)
+                .await
+                .unwrap();
+
+            let object_key = sealed_object_key.unseal(&encryption_key, &bucket.name(), &input.key);
+            let reader = DecryptingReader::new(reader, DAREDecryptor::new(object_key.key));
+            let reader_stream = ReaderStream::new(reader);
+
+            let content_length = object
+                .metadata
+                .get("sse_content_length")
+                .unwrap()
+                .parse::<i64>()
+                .unwrap();
+
+            let output = GetObjectOutput {
+                body: Some(StreamingBlob::wrap(reader_stream)),
+                content_length: Some(content_length),
+                e_tag,
+                content_range,
+                last_modified,
+                ..Default::default()
+            };
+            return Ok(S3Response::new(output));
+        }
+
+        let reader_stream = ReaderStream::new(reader);
         let output = GetObjectOutput {
             body: Some(StreamingBlob::wrap(reader_stream)),
             content_length: Some(content_length_i64),
@@ -794,32 +841,88 @@ where
         let input = req.input;
 
         let PutObjectInput {
-            body, bucket, key, ..
+            body,
+            bucket,
+            key,
+            ssekms_key_id,
+            content_length,
+            ..
         } = input;
-
-        let bucket = BucketNameWithOwner::from(bucket)?;
-
-        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
-            return Err(s3_error!(NoSuchBucket));
-        };
 
         let Some(mut body) = body else {
             return Err(s3_error!(IncompleteBody));
         };
 
+        let Some(_) = content_length else {
+            return Err(s3_error!(MissingContentLength));
+        };
+
+        let bucket = BucketNameWithOwner::from(bucket)?;
+
+        let mut file = try_!(TempFile::new().await);
+        let f = file.open_rw().await.unwrap();
+        let (md5_hash, mut metadata) = match ssekms_key_id {
+            Some(key_id) => {
+                /// Encryption Steps
+                /// 1) fetch_encryption_key
+                /// 2) generate_object_key
+                /// 3) seal object key
+                /// 4) encrypt
+                /// 5) store object and metadata
+                let encryption_key = self.kms.fetch_encryption_key(&key_id).await.unwrap();
+                let object_key = encrypt::generate_object_key(&encryption_key, None).unwrap();
+                let mut encryptor = dare::encryptor::DAREEncryptor::new(
+                    object_key.key,
+                    dare::CipherSuite::AES256GCM,
+                )
+                .unwrap();
+
+                let mut stream_reader = StreamingBlobReader::new(body);
+                let _ = encryptor
+                    .encrypt_stream(&mut stream_reader, &mut file)
+                    .await
+                    .unwrap();
+
+                let mut iv: [u8; 32] = [0x00; 32];
+                OsRng.fill_bytes(&mut iv);
+                let sealed_object_key = object_key.seal(&encryption_key, &iv, &bucket.name(), &key);
+
+                let metadata = HashMap::from([
+                    ("sse_master_key".to_string(), key_id),
+                    ("sse_iv".to_string(), sealed_object_key.iv_as_hex()),
+                    ("sse_oek".to_string(), sealed_object_key.key_as_hex()),
+                    ("sse_algorithm".to_string(), sealed_object_key.algorithm()),
+                    ("sse_ek".to_string(), encryption_key.encrypted_key_as_str()),
+                    (
+                        "sse_content_length".to_string(),
+                        content_length.unwrap().to_string(),
+                    ),
+                ]);
+
+                //TODO: calculate md5 for encrypted
+                let md5_hash = <Md5 as Digest>::new();
+
+                (md5_hash, metadata)
+            }
+            _ => {
+                let mut md5_hash = <Md5 as Digest>::new();
+                while let Some(Ok(v)) = body.next().await {
+                    md5_hash.update(v.as_ref());
+                    try_!(file.write_all(&v).await);
+                }
+                try_!(file.flush().await);
+
+                (md5_hash, HashMap::new())
+            }
+        };
+
+        let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
+            return Err(s3_error!(NoSuchBucket));
+        };
+
         let machine = ObjectStore::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
-
-        let mut file = try_!(TempFile::new().await);
-
-        let mut md5_hash = <Md5 as Digest>::new();
-        while let Some(Ok(v)) = body.next().await {
-            md5_hash.update(v.as_ref());
-            try_!(file.write_all(&v).await);
-        }
-        try_!(file.flush().await);
-        try_!(file.rewind().await);
 
         let mut wallet = match &self.wallet {
             Some(w) => w.clone(),
@@ -830,14 +933,11 @@ where
         let e_tag = format!("\"{md5_sum}\"");
 
         let last_modified = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
-        let mut metadata = HashMap::from([
-            (
-                LAST_MODIFIED_METADATA_KEY.to_string(),
-                last_modified.to_string(),
-            ),
-            (ETAG_METADATA_KEY.to_string(), e_tag.to_string()),
-        ]);
-
+        metadata.insert(
+            LAST_MODIFIED_METADATA_KEY.to_string(),
+            last_modified.to_string(),
+        );
+        metadata.insert(ETAG_METADATA_KEY.to_string(), e_tag.to_string());
         if input.metadata.is_some() {
             for (key, value) in input.metadata.unwrap() {
                 metadata.insert(key, value);
@@ -849,7 +949,7 @@ where
                 self.provider.deref(),
                 &mut wallet,
                 &key,
-                file.file_path(),
+                f.file_path(),
                 AddOptions {
                     metadata,
                     ..AddOptions::default()
