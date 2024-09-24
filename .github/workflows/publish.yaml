@@ -14,6 +14,7 @@ jobs:
           ${{ secrets.IPC_DEPLOY_KEY }}
           ${{ secrets.BUILTIN_ACTORS_DEPLOY_KEY }}
           ${{ secrets.RUST_HOKU_DEPLOY_KEY }}
+          ${{ secrets.CONTRACTS_DEPLOY_KEY }}
 
     - name: Checkout source code
       uses: actions/checkout@v4
