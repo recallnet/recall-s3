@@ -488,7 +488,7 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let object = self.get_object(&machine, &input.key).await?;
-        let file_len = object.size as u64;
+        let file_len = object.size;
 
         let (content_length, content_range) = match input.range {
             None => (file_len, None),
