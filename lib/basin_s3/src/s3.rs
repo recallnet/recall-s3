@@ -342,6 +342,7 @@ where
         let (machine, _) = ObjectStore::new(
             self.provider.deref(),
             &mut wallet,
+            None,
             WriteAccess::OnlyOwner,
             HashMap::from([
                 (

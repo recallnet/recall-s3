@@ -51,14 +51,14 @@ clap-verbosity-flag = "2.2.1"
 ethers = "2.0.14"
 
 fvm_shared = "4.1.0"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d9bf4ca42ee6279f1352b7440be24640d0ee9eeb"}
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d9bf4ca42ee6279f1352b7440be24640d0ee9eeb"}
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d9bf4ca42ee6279f1352b7440be24640d0ee9eeb"}
-ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "e25f5051f9d058127d36f56204480090a9e0ce95"}
-fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "e25f5051f9d058127d36f56204480090a9e0ce95"}
-fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "e25f5051f9d058127d36f56204480090a9e0ce95"}
-fendermint_actor_objectstore = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "e25f5051f9d058127d36f56204480090a9e0ce95"}
-fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "e25f5051f9d058127d36f56204480090a9e0ce95"}
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="b68de019148989c41724efe44cb604e34552a58c"}
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="b68de019148989c41724efe44cb604e34552a58c"}
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="b68de019148989c41724efe44cb604e34552a58c"}
+ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "42049075cf7c168d14930d2c895e6bf1d2914515"}
+fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "42049075cf7c168d14930d2c895e6bf1d2914515"}
+fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "42049075cf7c168d14930d2c895e6bf1d2914515"}
+fendermint_actor_objectstore = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "42049075cf7c168d14930d2c895e6bf1d2914515"}
+fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "42049075cf7c168d14930d2c895e6bf1d2914515"}
 tendermint-rpc = { version = "0.31.1", features = [
     "secp256k1",
     "http-client",
