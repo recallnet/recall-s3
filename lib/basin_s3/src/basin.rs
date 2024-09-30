@@ -68,7 +68,11 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let object = if let Some(object) = object_list.objects.into_iter().next() {
-            object.1
+            if let Some(object) = object.1 {
+                object
+            } else {
+                return Err(s3_error!(NoSuchKey));
+            }
         } else {
             return Err(s3_error!(NoSuchKey));
         };

@@ -488,7 +488,7 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let object = self.get_object(&machine, &input.key).await?;
-        let file_len = object.size as u64;
+        let file_len = object.size;
 
         let (content_length, content_range) = match input.range {
             None => (file_len, None),
@@ -599,12 +599,16 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let object = if let Some(object) = object_list.objects.into_iter().next() {
-            object.1
+            if let Some(object) = object.1 {
+                object
+            } else {
+                return Err(s3_error!(NoSuchKey));
+            }
         } else {
             return Err(s3_error!(NoSuchKey));
         };
 
-        let content_length_i64 = try_!(i64::try_from(object.size as u64));
+        let content_length_i64 = try_!(i64::try_from(object.size));
 
         // TODO: detect content type
         let content_type = mime::APPLICATION_OCTET_STREAM;
@@ -729,7 +733,13 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let mut objects: Vec<Object> = Vec::new();
-        for (key, object) in response.objects {
+        for (key, object_opt) in response.objects {
+            let object = if let Some(obj) = object_opt {
+                obj
+            } else {
+                continue;
+            };
+
             let key_str = try_!(String::from_utf8(key));
 
             let last_modified = object
