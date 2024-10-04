@@ -3,7 +3,7 @@ use std::ops::{Deref, Not};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::bucket::BucketNameWithOwner;
-use crate::utils::{copy_bytes, DecryptingReader, HashReader};
+use crate::utils::{copy_bytes, HashReader};
 use crate::utils::{hex, StreamingBlobReader};
 use crate::{bucket, Basin};
 
@@ -11,7 +11,7 @@ use async_tempfile::TempFile;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use bytestring::ByteString;
 use dare::DAREDecryptor;
-use encrypt::{Kms, SealedObjectKey};
+use encrypt::{DareCodec, Kms, SealedObjectKey};
 use ethers::prelude::StreamExt;
 use ethers::utils::hex::ToHexExt;
 use fendermint_actor_machine::WriteAccess;
@@ -41,6 +41,7 @@ use tendermint_rpc::Client;
 use tokio::fs;
 use tokio::io::AsyncSeekExt;
 use tokio::io::AsyncWriteExt;
+use tokio_util::codec::Framed;
 use tokio_util::io::ReaderStream;
 use tracing::debug;
 use tracing::log::error;
@@ -550,8 +551,6 @@ where
             .get(ETAG_METADATA_KEY)
             .map(|v| v.to_string());
 
-        println!("content_length_i64={}", content_length_i64);
-
         let is_encrypted = object.metadata.contains_key("sse_oek");
         if is_encrypted {
             let iv = object.metadata.get("sse_iv").unwrap().clone();
@@ -569,8 +568,8 @@ where
                 .unwrap();
 
             let object_key = sealed_object_key.unseal(&encryption_key, &bucket.name(), &input.key);
-            let reader = DecryptingReader::new(reader, DAREDecryptor::new(object_key.key));
-            let reader_stream = ReaderStream::new(reader);
+            let reader = Framed::new(reader, DareCodec::new(DAREDecryptor::new(object_key.key)));
+            //let reader_stream = ReaderStream::new(reader);
 
             let content_length = object
                 .metadata
@@ -579,8 +578,10 @@ where
                 .parse::<i64>()
                 .unwrap();
 
+            println!("content_length_i64={}", content_length);
+
             let output = GetObjectOutput {
-                body: Some(StreamingBlob::wrap(reader_stream)),
+                body: Some(StreamingBlob::wrap(reader)),
                 content_length: Some(content_length),
                 e_tag,
                 content_range,

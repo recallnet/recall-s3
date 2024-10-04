@@ -1,6 +1,8 @@
+pub mod codec;
 mod key;
 mod kms;
 
+pub use codec::*;
 pub use key::*;
 pub use kms::*;
 

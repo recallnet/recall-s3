@@ -6,10 +6,8 @@ use std::task::{Context, Poll};
 use crate::error::*;
 
 use bytes::{Buf, BufMut, Bytes};
-use dare::{DAREDecryptor, DAREHeader, HEADER_SIZE, MAX_PAYLOAD_SIZE, TAG_SIZE};
-use futures::{ready, Stream, StreamExt};
+use futures::{Stream, StreamExt};
 use md5::{Digest, Md5};
-use pin_project::pin_project;
 use s3s::dto::StreamingBlob;
 use s3s::StdError;
 use tokio::io::AsyncWriteExt;
@@ -122,113 +120,13 @@ impl AsyncRead for StreamingBlobReader {
     }
 }
 
-#[pin_project(project = DecryptingReaderStateProj)]
-#[derive(Debug)]
-enum DecryptingReaderState {
-    ReadingHeader,
-    ReadingMessage(#[pin] Vec<u8>),
-    Decrypt(#[pin] Vec<u8>, #[pin] Vec<u8>),
-    //WritingPlaintext(#[pin] Vec<u8>),
-}
-
-#[pin_project]
-pub struct DecryptingReader<R> {
-    #[pin]
-    inner: R,
-    //#[pin]
-    buffer: Vec<u8>,
-    #[pin]
-    decrypter: DAREDecryptor,
-    #[pin]
-    state: DecryptingReaderState,
-    position: usize,
-    passed: bool,
-}
-
-impl<R: AsyncRead> DecryptingReader<R> {
-    pub fn new(inner: R, decrypter: DAREDecryptor) -> Self {
-        Self {
-            inner,
-            decrypter,
-            buffer: vec![0; HEADER_SIZE + MAX_PAYLOAD_SIZE + TAG_SIZE],
-            position: 0,
-            state: DecryptingReaderState::ReadingHeader,
-            passed: false,
-        }
-    }
-}
-impl<R: AsyncRead> AsyncRead for DecryptingReader<R> {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        loop {
-            use DecryptingReaderState::*;
-
-            let mut this = self.as_mut().project();
-
-            match this.state.as_mut().project() {
-                DecryptingReaderStateProj::ReadingHeader => {
-                    this.buffer.resize(HEADER_SIZE, 0);
-                    let read_buf = &mut ReadBuf::new(this.buffer);
-
-                    match ready!(this.inner.as_mut().poll_read(cx, read_buf)) {
-                        Ok(()) => {
-                            if this.buffer.len() >= HEADER_SIZE {
-                                let header = &this.buffer[*this.position..HEADER_SIZE];
-                                *this.position += HEADER_SIZE;
-                                this.state.set(ReadingMessage(header.to_vec()));
-                            }
-                        }
-                        Err(e) => return Poll::Ready(Err(e)),
-                    };
-                }
-                DecryptingReaderStateProj::ReadingMessage(header) => {
-                    //TODO: handle error
-                    let dare_header = DAREHeader::from_bytes(&header).unwrap();
-                    let message_size = dare_header.payload_size() as usize + TAG_SIZE;
-
-                    this.buffer.resize(message_size, 0);
-
-                    let read_buf = &mut ReadBuf::new(this.buffer);
-                    match ready!(this.inner.as_mut().poll_read(cx, read_buf)) {
-                        Ok(()) => {
-                            if this.buffer.len() >= message_size {
-                                let message = &this.buffer[..];
-                                //*this.position = *this.position + message_size;
-                                let h = header.to_vec();
-                                this.state.set(Decrypt(h, message.to_vec()));
-                            }
-                        }
-                        Err(e) => return Poll::Ready(Err(e)),
-                    };
-                }
-                DecryptingReaderStateProj::Decrypt(header, message) => {
-                    let decrypter = &mut this.decrypter;
-                    //TODO: handle error
-                    let decrypted = decrypter.decrypt(&header, &message).unwrap();
-                    println!("{}", String::from_utf8(decrypted.clone()).unwrap().len());
-
-                    buf.put_slice(&decrypted[..]);
-
-                    this.state.set(ReadingHeader);
-
-                    return Poll::Ready(Ok(()));
-                }
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::utils::{hex, DecryptingReader, HashReader};
-    use dare::CipherSuite::AES256GCM;
-    use dare::{DAREDecryptor, DAREEncryptor};
+    use crate::utils::{hex, HashReader};
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use dare::DAREDecryptor;
+    use encrypt::{Kes, Kms, SealedObjectKey};
     use std::io::Cursor;
-
-    use tokio::io::AsyncReadExt;
 
     #[tokio::test]
     async fn test_hasher() {
@@ -244,25 +142,42 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_decryption() {
-        let key = [0u8; 32];
-        let plaintext = b"A".repeat(100);
+    async fn test_dare_decryption() {
+        let encrypted = std::fs::read("/Users/brunocalza/projects/s3-ipc/hello2.bin").unwrap();
 
-        // Encryption
-        let mut encryptor = DAREEncryptor::new(key, AES256GCM).unwrap();
-        let mut encrypted = Vec::new();
-        let mut plaintext_cursor = Cursor::new(&plaintext);
-        encryptor
-            .encrypt_stream(&mut plaintext_cursor, &mut encrypted)
+        let oek = "10011f000000000093cca72546292b879e5d610ded0dbe57af595eed3571449e295c60d587d83d3fefbdd631d321f2d421a623c370531b0ecb32dc8c948119a0";
+        let iv = "4abf5d0d66046ad4a191e188f53ef34fa8977fdb996cae37734a0c5c5bc7c17a";
+        let algorithm = "DAREv1-HMAC-SHA256";
+
+        let sealed_object_key =
+            SealedObjectKey::new(oek.to_string(), iv.to_string(), algorithm.to_string());
+
+        let cert =
+            std::fs::read("/Users/brunocalza/projects/s3-ipc/lib/encrypt/root.cert").unwrap();
+        let key = std::fs::read("/Users/brunocalza/projects/s3-ipc/lib/encrypt/root.key").unwrap();
+
+        let kms = Kes::new("https://play.min.io:7373".to_string(), key, cert).unwrap();
+
+        let kek = STANDARD.decode("9s847AOqu6FIZAONO/U/KHHqReBHnqd4se7E7nJowTzuf0fO/HP7UM0KZyWi/KkztHYGSRy3EUpPMqJZx5nNdnmJJG0WioBbmcnB7Q==").unwrap();
+
+        let encryption_key = kms
+            .decrypt_encryption_key(&"bcalza-key".to_string(), &kek)
+            .await
+            .unwrap();
+        let object_key = sealed_object_key.unseal(
+            &encryption_key,
+            &"foo".to_string(),
+            &"hello2.txt".to_string(),
+        );
+        // Decryption
+        let mut decryptor = DAREDecryptor::new(object_key.key);
+        let mut decrypted = Vec::new();
+        let mut encrypted_cursor = Cursor::new(&encrypted);
+        decryptor
+            .decrypt_stream(&mut encrypted_cursor, &mut decrypted)
             .await
             .unwrap();
 
-        let decryptor = DAREDecryptor::new(key);
-
-        let mut reader = DecryptingReader::new(Cursor::new(encrypted), decryptor);
-        let mut decrypted = vec![0; plaintext.len()];
-
-        reader.read_exact(&mut decrypted).await.unwrap();
-        assert_eq!(plaintext.to_vec(), decrypted);
+        println!("{}", decrypted.len());
     }
 }
