@@ -230,7 +230,7 @@ async fn test_list_objects_v2() -> Result<()> {
     let bucket = "test-list-objects";
     let bucket_with_owner = format!("{}.{}", &config.address, bucket);
 
-    create_bucket(&c, bucket).await?;
+    //create_bucket(&c, bucket).await?;
 
     let test_prefix = "this/is/a/test/path/";
     let key1 = "this/is/a/test/path/file1.txt";
@@ -296,7 +296,7 @@ async fn test_single_object() -> Result<()> {
             .await?;
     }
     // wait for object resolution
-    sleep(Duration::from_millis(2000)).await;
+    sleep(Duration::from_millis(5000)).await;
 
     {
         let ans = c
@@ -387,7 +387,7 @@ async fn test_multipart() -> Result<()> {
     }
 
     // wait for object resolution
-    sleep(Duration::from_millis(2000)).await;
+    sleep(Duration::from_millis(5000)).await;
 
     {
         let ans = c
@@ -440,7 +440,7 @@ async fn test_copy() -> Result<()> {
             .await?;
     }
     // wait for object resolution
-    sleep(Duration::from_millis(2000)).await;
+    sleep(Duration::from_millis(5000)).await;
 
     {
         c.copy_object()
@@ -452,7 +452,7 @@ async fn test_copy() -> Result<()> {
     }
 
     // wait for object resolution
-    sleep(Duration::from_millis(2000)).await;
+    sleep(Duration::from_millis(5000)).await;
 
     {
         let ans = c
