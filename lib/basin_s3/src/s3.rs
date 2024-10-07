@@ -5,12 +5,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::bucket::BucketNameWithOwner;
 use crate::utils::{copy_bytes, HashReader};
 use crate::utils::{hex, StreamingBlobReader};
-use crate::{bucket, Basin};
+use crate::{bucket, Basin, EncryptedObject};
 
 use async_tempfile::TempFile;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use bytestring::ByteString;
-use dare::DAREDecryptor;
+use dare::{DAREDecryptor, HEADER_SIZE, MAX_PAYLOAD_SIZE, TAG_SIZE};
 use encrypt::{DareCodec, Kms, SealedObjectKey};
 use ethers::prelude::StreamExt;
 use ethers::utils::hex::ToHexExt;
@@ -553,36 +553,31 @@ where
 
         let is_encrypted = object.metadata.contains_key("sse_oek");
         if is_encrypted {
-            let iv = object.metadata.get("sse_iv").unwrap().clone();
-            let oek = object.metadata.get("sse_oek").unwrap().clone();
-            let algorithm = object.metadata.get("sse_algorithm").unwrap().clone();
-            let sealed_object_key = SealedObjectKey::new(oek, iv, algorithm);
-
-            let master_key = object.metadata.get("sse_master_key").unwrap();
-            let encryption_key = object.metadata.get("sse_ek").unwrap();
-            let encryption_key_vec = STANDARD.decode(encryption_key).unwrap();
+            let encrypted_object = EncryptedObject::new(&object).unwrap();
             let encryption_key = self
                 .kms
-                .decrypt_encryption_key(master_key, &encryption_key_vec)
+                .decrypt_encryption_key(
+                    encrypted_object.master_key(),
+                    &encrypted_object.kek_to_vec(),
+                )
                 .await
                 .unwrap();
 
-            let object_key = sealed_object_key.unseal(&encryption_key, &bucket.name(), &input.key);
+            let object_key = encrypted_object.sealed_object_key().unseal(
+                &encryption_key,
+                &bucket.name(),
+                &input.key,
+            );
             let reader = Framed::new(reader, DareCodec::new(DAREDecryptor::new(object_key.key)));
-            //let reader_stream = ReaderStream::new(reader);
 
-            let content_length = object
-                .metadata
-                .get("sse_content_length")
-                .unwrap()
-                .parse::<i64>()
-                .unwrap();
+            let decrypted_content_length = encrypted_object.decrypted_content_length();
 
-            println!("content_length_i64={}", content_length);
+            println!("content_length={}", content_length);
+            println!("decrypted_content_length={}", decrypted_content_length);
 
             let output = GetObjectOutput {
                 body: Some(StreamingBlob::wrap(reader)),
-                content_length: Some(content_length),
+                content_length: Some(decrypted_content_length as i64),
                 e_tag,
                 content_range,
                 last_modified,
@@ -846,16 +841,11 @@ where
             bucket,
             key,
             ssekms_key_id,
-            content_length,
             ..
         } = input;
 
         let Some(mut body) = body else {
             return Err(s3_error!(IncompleteBody));
-        };
-
-        let Some(_) = content_length else {
-            return Err(s3_error!(MissingContentLength));
         };
 
         let bucket = BucketNameWithOwner::from(bucket)?;
@@ -893,11 +883,7 @@ where
                     ("sse_iv".to_string(), sealed_object_key.iv_as_hex()),
                     ("sse_oek".to_string(), sealed_object_key.key_as_hex()),
                     ("sse_algorithm".to_string(), sealed_object_key.algorithm()),
-                    ("sse_ek".to_string(), encryption_key.encrypted_key_as_str()),
-                    (
-                        "sse_content_length".to_string(),
-                        content_length.unwrap().to_string(),
-                    ),
+                    ("sse_kek".to_string(), encryption_key.encrypted_key_as_str()),
                 ]);
 
                 //TODO: calculate md5 for encrypted

@@ -2300,7 +2300,6 @@ dependencies = [
  "futures",
  "hex-simd",
  "hmac 0.12.1",
- "pin-project",
  "rand",
  "reqwest 0.12.8",
  "serde",
