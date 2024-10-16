@@ -16,6 +16,8 @@ use aws_sdk_s3::types::CompletedPart;
 use aws_sdk_s3::types::CreateBucketConfiguration;
 use aws_sdk_s3::Client;
 use basin_s3::Basin;
+use bytes::Bytes;
+use encrypt::Kes;
 use ethers::utils::hex::ToHexExt;
 use hoku_provider::json_rpc::JsonRpcProvider;
 use hoku_sdk::network::Network;
@@ -27,7 +29,7 @@ use ipc_api::evm::payload_to_evm_address;
 use once_cell::sync::Lazy;
 use s3s::auth::SimpleAuth;
 use s3s::service::S3ServiceBuilder;
-use std::env;
+use std::{env, fs};
 use tempfile::tempdir;
 use tokio::sync::Mutex;
 use tokio::sync::MutexGuard;
@@ -91,9 +93,17 @@ async fn config() -> &'static SdkConfigWithAddress {
         )
         .unwrap();
 
+        //TODO: change for a local KMS implementation
+
+        let cert = fs::read("/Users/brunocalza/projects/s3-ipc/lib/encrypt/root.cert").unwrap();
+        let key = fs::read("/Users/brunocalza/projects/s3-ipc/lib/encrypt/root.key").unwrap();
+
+        let kms = Kes::new("https://play.min.io:7373".to_string(), key, cert).unwrap();
+
         let basin = Basin::new(
             tempdir().unwrap().into_path(),
             provider,
+            kms,
             Some(WALLET.get().unwrap().clone()),
         )
         .unwrap();
@@ -230,7 +240,7 @@ async fn test_list_objects_v2() -> Result<()> {
     let bucket = "test-list-objects";
     let bucket_with_owner = format!("{}.{}", &config.address, bucket);
 
-    //create_bucket(&c, bucket).await?;
+    create_bucket(&c, bucket).await?;
 
     let test_prefix = "this/is/a/test/path/";
     let key1 = "this/is/a/test/path/file1.txt";
@@ -250,6 +260,9 @@ async fn test_list_objects_v2() -> Result<()> {
             .send()
             .await?;
     }
+
+    // wait for object resolution
+    sleep(Duration::from_millis(5000)).await;
 
     let result = c
         .list_objects_v2()
@@ -279,7 +292,7 @@ async fn test_single_object() -> Result<()> {
     let config = config().await;
     let c = Client::new(&config.sdk);
 
-    let bucket = "test-single-object";
+    let bucket = "t-single-object";
     let bucket_with_owner = format!("{}.{}", &config.address, bucket);
 
     let key = "sample.txt";
@@ -474,6 +487,154 @@ async fn test_copy() -> Result<()> {
     {
         delete_object(&c, &bucket_with_owner, key).await?;
         delete_object(&c, &bucket_with_owner, "sample-copy.txt").await?;
+        //delete_bucket(&c, bucket).await?;
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[tracing::instrument]
+async fn test_single_object_encrypted() -> Result<()> {
+    let _guard = serial().await;
+    let config = config().await;
+    let c = Client::new(&config.sdk);
+
+    let bucket = "t-single-obj-enc";
+    let bucket_with_owner = format!("{}.{}", &config.address, bucket);
+
+    let key = "sample.txt";
+    let content = "a".repeat(70000); // content bigger that MAX_PAYLOAD_SIZE
+
+    create_bucket(&c, bucket).await?;
+
+    {
+        c.put_object()
+            .bucket(&bucket_with_owner)
+            .ssekms_key_id("bcalza-key")
+            .key(key)
+            .body(ByteStream::from(Bytes::from(content.clone())))
+            .send()
+            .await?;
+    }
+
+    // wait for object resolution
+    sleep(Duration::from_millis(5000)).await;
+
+    {
+        let ans = c
+            .get_object()
+            .bucket(&bucket_with_owner)
+            .key(key)
+            .send()
+            .await?;
+
+        let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
+        //let e_tag = ans.e_tag.unwrap();
+        let body = ans.body.collect().await?.into_bytes();
+
+        assert_eq!(content_length, content.len());
+        // assert_eq!(e_tag, "\"4a944a9af55168f2e2063907c421b061\"".to_string());
+        assert_eq!(body.as_ref(), content.as_bytes());
+    }
+    {
+        delete_object(&c, &bucket_with_owner, key).await?;
+        //delete_bucket(&c, bucket).await?;
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[tracing::instrument]
+async fn test_single_object_encrypted_range() -> Result<()> {
+    let _guard = serial().await;
+    let config = config().await;
+    let c = Client::new(&config.sdk);
+
+    let bucket = "t-single-obj-enc-ran";
+    let bucket_with_owner = format!("{}.{}", &config.address, bucket);
+
+    let key = "sample.txt";
+    let content = "abcde".repeat(40000);
+
+    create_bucket(&c, bucket).await?;
+
+    {
+        c.put_object()
+            .bucket(&bucket_with_owner)
+            .ssekms_key_id("bcalza-key")
+            .key(key)
+            .body(ByteStream::from(Bytes::from(content.clone())))
+            .send()
+            .await?;
+    }
+
+    // wait for object resolution
+    sleep(Duration::from_millis(5000)).await;
+
+    {
+        struct TestCase {
+            range: &'static str,
+            exp_content: &'static str,
+        }
+        let test_cases = vec![
+            TestCase {
+                range: "bytes=196605-196610",
+                exp_content: "abcdea",
+            },
+            TestCase {
+                range: "bytes=65533-65540",
+                exp_content: "deabcdea",
+            },
+            TestCase {
+                range: "bytes=-1",
+                exp_content: "e",
+            },
+            TestCase {
+                range: "bytes=-5",
+                exp_content: "abcde",
+            },
+            TestCase {
+                range: "bytes=199997-",
+                exp_content: "cde",
+            },
+            TestCase {
+                range: "bytes=30000-89999",
+                exp_content: Box::leak("abcde".repeat((89999 - 30000 + 1) / 5).into_boxed_str()),
+            },
+        ];
+
+        for tc in test_cases {
+            let ans = c
+                .get_object()
+                .range(tc.range)
+                .bucket(&bucket_with_owner)
+                .key(key)
+                .send()
+                .await?;
+
+            let content_length: usize = ans.content_length().unwrap().try_into().unwrap();
+            //let e_tag = ans.e_tag.unwrap();
+            let body = ans.body.collect().await?.into_bytes();
+
+            assert_eq!(
+                content_length,
+                tc.exp_content.len(),
+                "testing range: {}",
+                tc.range
+            );
+            // assert_eq!(e_tag, "\"4a944a9af55168f2e2063907c421b061\"".to_string());
+            assert_eq!(
+                body.as_ref(),
+                tc.exp_content.as_bytes(),
+                "testing range: {}",
+                tc.range
+            );
+        }
+    }
+    {
+        delete_object(&c, &bucket_with_owner, key).await?;
         //delete_bucket(&c, bucket).await?;
     }
 

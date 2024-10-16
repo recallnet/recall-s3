@@ -1,10 +1,14 @@
-use crate::error::*;
+use std::collections::VecDeque;
+use std::io::Write;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use bytes::Bytes;
+use crate::error::*;
+
+use bytes::{Buf, BufMut, Bytes};
 use futures::{Stream, StreamExt};
 use md5::{Digest, Md5};
+use s3s::dto::StreamingBlob;
 use s3s::StdError;
 use tokio::io::AsyncWriteExt;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
@@ -66,6 +70,53 @@ impl<R: AsyncRead + Unpin> AsyncRead for HashReader<R> {
             }
             other => other,
         }
+    }
+}
+
+pub struct StreamingBlobReader {
+    inner: StreamingBlob,
+    buffer: VecDeque<u8>,
+}
+
+impl StreamingBlobReader {
+    pub fn new(inner: StreamingBlob) -> Self {
+        Self {
+            inner,
+            buffer: VecDeque::new(),
+        }
+    }
+}
+
+impl AsyncRead for StreamingBlobReader {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        let this = self.get_mut();
+
+        while this.buffer.is_empty() {
+            match Pin::new(&mut this.inner).poll_next(cx) {
+                Poll::Ready(Some(Ok(bytes))) => {
+                    let _ = this.buffer.write_all(bytes.chunk());
+                }
+                Poll::Ready(Some(Err(_))) => {
+                    unreachable!()
+                }
+                Poll::Ready(None) => {
+                    return Poll::Ready(Ok(()));
+                }
+                Poll::Pending => {
+                    return Poll::Pending;
+                }
+            }
+        }
+
+        while buf.remaining() > 0 && !this.buffer.is_empty() {
+            buf.put_u8(this.buffer.pop_front().unwrap());
+        }
+
+        Poll::Ready(Ok(()))
     }
 }
 

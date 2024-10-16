@@ -1,11 +1,13 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, clippy::pedantic)]
 
+use std::fs;
 use std::io::IsTerminal;
 
 use basin_s3::Basin;
 use clap::{CommandFactory, Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
+use encrypt::Kes;
 use fendermint_crypto::SecretKey;
 use hoku_provider::json_rpc::JsonRpcProvider;
 use hoku_sdk::network::Network as SdkNetwork;
@@ -108,15 +110,21 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
     let root = my_home()?.unwrap().join(".s3-basin");
     std::fs::create_dir_all(&root)?;
 
+    let cert = fs::read("/Users/brunocalza/projects/s3-ipc/lib/encrypt/root.cert").unwrap();
+    let key = fs::read("/Users/brunocalza/projects/s3-ipc/lib/encrypt/root.key").unwrap();
+
+    let kms = Kes::new("https://play.min.io:7373".to_string(), key, cert).unwrap();
+
     let basin = match cli.private_key {
         Some(sk) => {
             // Setup local wallet using private key from arg
             let mut wallet =
                 Wallet::new_secp256k1(sk, AccountKind::Ethereum, network.subnet_id()?)?;
             wallet.init_sequence(&provider).await?;
-            Basin::new(root, provider, Some(wallet))?
+
+            Basin::new(root, provider, kms, Some(wallet))?
         }
-        None => Basin::new(root, provider, None)?,
+        None => Basin::new(root, provider, kms, None)?,
     };
 
     // Setup S3 service

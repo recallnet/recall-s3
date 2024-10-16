@@ -12,12 +12,16 @@ clippy::multiple_crate_versions, // TODO: check later
 )]
 
 pub use self::basin::Basin;
+pub use self::encrypted_object::*;
 pub use self::error::*;
+pub use self::range::*;
 
 #[macro_use]
 mod error;
 
 mod basin;
 mod bucket;
+mod encrypted_object;
+mod range;
 mod s3;
 mod utils;

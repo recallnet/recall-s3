@@ -1,5 +1,5 @@
 [workspace]
-members = ["lib/basin_s3"]
+members = ["lib/basin_s3", "lib/encrypt"]
 resolver = "2"
 
 [workspace.package]
