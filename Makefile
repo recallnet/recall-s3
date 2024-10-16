@@ -10,3 +10,6 @@ check-fmt:
 
 check-clippy:
 	cargo clippy --no-deps --tests -- -D clippy::all
+
+test:
+	cargo test --lib

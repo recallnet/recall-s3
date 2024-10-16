@@ -10,7 +10,6 @@ pub struct EncryptedObject {
     algorithm: String,
     master_key: String,
     kek: String,
-    content_length: u64,
 }
 
 impl EncryptedObject {
@@ -23,15 +22,12 @@ impl EncryptedObject {
         let master_key = metadata.get("sse_master_key").unwrap().clone();
         let kek = metadata.get("sse_kek").unwrap().clone();
 
-        let content_length = (&object.size).clone();
-
         Ok(EncryptedObject {
             oek,
             iv,
             algorithm,
             master_key,
             kek,
-            content_length,
         })
     }
 
@@ -40,19 +36,19 @@ impl EncryptedObject {
     }
 
     pub fn kek_to_vec(&self) -> Vec<u8> {
-        return STANDARD.decode(&self.kek).unwrap()
+        return STANDARD.decode(&self.kek).unwrap();
     }
 
     pub fn sealed_object_key(&self) -> SealedObjectKey {
         SealedObjectKey::new(self.oek.clone(), self.iv.clone(), self.algorithm.clone())
     }
+}
 
-    pub fn decrypted_content_length(&self) -> u64 {
-        let package_size = HEADER_SIZE + MAX_PAYLOAD_SIZE + TAG_SIZE;
-        let content_length = self.content_length as usize;
+pub fn decrypted_content_length(size: u64) -> u64 {
+    let package_size = HEADER_SIZE + MAX_PAYLOAD_SIZE + TAG_SIZE;
+    let content_length = size as usize;
 
-        let n_package = (content_length + package_size - 1) / package_size;
+    let n_package = (content_length + package_size - 1) / package_size;
 
-        (content_length - (n_package * (HEADER_SIZE + TAG_SIZE))) as u64
-    }
+    (content_length - (n_package * (HEADER_SIZE + TAG_SIZE))) as u64
 }

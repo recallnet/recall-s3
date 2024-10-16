@@ -25,6 +25,10 @@ impl Error {
     pub fn from_string(s: impl Into<String>) -> Self {
         Self::new(s.into().into())
     }
+
+    pub fn to_string(&self) -> String {
+        self.source.to_string()
+    }
 }
 
 impl<E> From<E> for Error

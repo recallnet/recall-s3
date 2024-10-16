@@ -5,13 +5,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::bucket::BucketNameWithOwner;
 use crate::utils::{copy_bytes, HashReader};
 use crate::utils::{hex, StreamingBlobReader};
-use crate::{bucket, Basin, EncryptedObject};
+use crate::{bucket, decrypted_content_length, Basin, EncryptedObject, HTTPRangeSpec};
 
 use async_tempfile::TempFile;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
 use bytestring::ByteString;
-use dare::{DAREDecryptor, HEADER_SIZE, MAX_PAYLOAD_SIZE, TAG_SIZE};
-use encrypt::{DareCodec, Kms, SealedObjectKey};
+use dare::{DAREDecryptor, MAX_PAYLOAD_SIZE};
+use encrypt::{DareCodec, Filter, Kms};
 use ethers::prelude::StreamExt;
 use ethers::utils::hex::ToHexExt;
 use fendermint_actor_machine::WriteAccess;
@@ -39,8 +38,7 @@ use s3s::S3;
 use s3s::{S3Request, S3Response};
 use tendermint_rpc::Client;
 use tokio::fs;
-use tokio::io::AsyncSeekExt;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 use tokio_util::codec::Framed;
 use tokio_util::io::ReaderStream;
 use tracing::debug;
@@ -496,30 +494,18 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let object = self.get_object(&machine, &input.key).await?;
-        let file_len = object.size;
+        let object_size = object.size;
+        let is_encrypted = object.metadata.contains_key("sse_oek");
 
-        let (content_length, content_range) = match input.range {
-            None => (file_len, None),
-            Some(range) => {
-                let file_range = range.check(file_len)?;
-                let content_length = file_range.end - file_range.start;
-                let content_range =
-                    fmt_content_range(file_range.start, file_range.end - 1, file_len);
-                (content_length, Some(content_range))
+        let http_range = input.range.map(HTTPRangeSpec::new);
+
+        let range = http_range.as_ref().map(|v| {
+            if is_encrypted {
+                v.get_range_for_encrypted(decrypted_content_length(object_size))
+            } else {
+                v.get_range(object_size)
             }
-        };
-
-        let content_length_i64 = try_!(i64::try_from(content_length));
-
-        let range = match input.range {
-            Some(Range::Int { first, last }) => Some(format!(
-                "{}-{}",
-                first,
-                last.map_or(String::new(), |v| v.to_string())
-            )),
-            Some(Range::Suffix { length }) => Some(format!("-{length}")),
-            _ => None,
-        };
+        });
 
         let (writer, reader) = tokio::io::duplex(4096);
 
@@ -551,7 +537,17 @@ where
             .get(ETAG_METADATA_KEY)
             .map(|v| v.to_string());
 
-        let is_encrypted = object.metadata.contains_key("sse_oek");
+        let (content_length, content_range) = match &http_range {
+            Some(http_range) => {
+                let (content_length, content_range) =
+                    http_range.to_header(decrypted_content_length(object_size));
+                (content_length, Some(content_range))
+            }
+            None if is_encrypted => (decrypted_content_length(object_size), None),
+            None => (object_size, None),
+        };
+        let content_length_i64 = try_!(i64::try_from(content_length));
+
         if is_encrypted {
             let encrypted_object = EncryptedObject::new(&object).unwrap();
             let encryption_key = self
@@ -568,16 +564,33 @@ where
                 &bucket.name(),
                 &input.key,
             );
-            let reader = Framed::new(reader, DareCodec::new(DAREDecryptor::new(object_key.key)));
 
-            let decrypted_content_length = encrypted_object.decrypted_content_length();
+            let dare_codec = match http_range {
+                Some(http_range) => {
+                    let (offset, length) =
+                        http_range.get_offset_length(decrypted_content_length(object_size));
 
-            println!("content_length={}", content_length);
-            println!("decrypted_content_length={}", decrypted_content_length);
+                    let package_index = offset / MAX_PAYLOAD_SIZE as u64;
+                    let consumed = package_index * MAX_PAYLOAD_SIZE as u64;
+
+                    // TODO: check if this conversion is safe
+                    let sequence_number = package_index as u32;
+
+                    DareCodec::with_filter(
+                        DAREDecryptor::with_sequence_number(object_key.key, sequence_number),
+                        Filter {
+                            offset,
+                            length,
+                            consumed,
+                        },
+                    )
+                }
+                None => DareCodec::new(DAREDecryptor::new(object_key.key)),
+            };
 
             let output = GetObjectOutput {
-                body: Some(StreamingBlob::wrap(reader)),
-                content_length: Some(decrypted_content_length as i64),
+                body: Some(StreamingBlob::wrap(Framed::new(reader, dare_codec))),
+                content_length: Some(content_length_i64),
                 e_tag,
                 content_range,
                 last_modified,
@@ -778,6 +791,7 @@ where
 
         let mut objects: Vec<Object> = Vec::new();
         for (key, object_opt) in response.objects {
+            dbg!(&object_opt);
             let object = if let Some(obj) = object_opt {
                 obj
             } else {
@@ -854,12 +868,6 @@ where
         let f = file.open_rw().await.unwrap();
         let (md5_hash, mut metadata) = match ssekms_key_id {
             Some(key_id) => {
-                /// Encryption Steps
-                /// 1) fetch_encryption_key
-                /// 2) generate_object_key
-                /// 3) seal object key
-                /// 4) encrypt
-                /// 5) store object and metadata
                 let encryption_key = self.kms.fetch_encryption_key(&key_id).await.unwrap();
                 let object_key = encrypt::generate_object_key(&encryption_key, None).unwrap();
                 let mut encryptor = dare::encryptor::DAREEncryptor::new(
@@ -1000,9 +1008,4 @@ where
         let output = GetBucketLocationOutput::default();
         Ok(S3Response::new(output))
     }
-}
-
-/// <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Range>
-fn fmt_content_range(start: u64, end_inclusive: u64, size: u64) -> String {
-    format!("bytes {start}-{end_inclusive}/{size}")
 }

@@ -1794,7 +1794,7 @@ dependencies = [
 [[package]]
 name = "dare"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/dare.git#d74e626a938f63d72640345ba2bdc4c41df65ef1"
+source = "git+ssh://git@github.com/hokunet/dare.git#a0f6881e0ef9ecebb0f6881a441b2a843ca3ccd1"
 dependencies = [
  "aes-gcm",
  "chacha20poly1305",
@@ -2305,6 +2305,7 @@ dependencies = [
  "serde",
  "sha2 0.10.8",
  "tokio",
+ "tokio-stream",
  "tokio-util",
 ]
 

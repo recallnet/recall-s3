@@ -123,9 +123,6 @@ impl AsyncRead for StreamingBlobReader {
 #[cfg(test)]
 mod tests {
     use crate::utils::{hex, HashReader};
-    use base64::{engine::general_purpose::STANDARD, Engine as _};
-    use dare::DAREDecryptor;
-    use encrypt::{Kes, Kms, SealedObjectKey};
     use std::io::Cursor;
 
     #[tokio::test]
