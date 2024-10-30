@@ -20,45 +20,45 @@ default = []
 binary = ["tokio/full", "dep:clap", "dep:tracing-subscriber", "dep:hyper-util"]
 
 [dependencies]
-async-trait = "0.1.73"
-bytes = "1.4.0"
-clap = { version = "4.3.21", optional = true, features = ["derive", "env"] }
-futures = "0.3.28"
+async-trait = "0.1.83"
+bytes = "1.8.0"
+clap = { version = "4.5.20", optional = true, features = ["derive", "env"] }
+futures = "0.3.31"
 hex-simd = "0.8.0"
-hyper-util = { version = "0.1.5", optional = true, features = [
+hyper-util = { version = "0.1.10", optional = true, features = [
     "server-auto",
     "server-graceful",
     "http1",
     "http2",
     "tokio",
 ] }
-md-5 = "0.10.5"
+md-5 = "0.10.6"
 mime = "0.3.17"
-s3s = "0.10.0"
-time = "0.3.25"
-tokio = { version = "1.31.0", features = ["fs", "io-util"] }
-tokio-util = { version = "0.7.8", features = ["io"] }
-tracing = "0.1.37"
+s3s = "0.10.1"
+time = "0.3.36"
+tokio = { version = "1.41.0", features = ["fs", "io-util"] }
+tokio-util = { version = "0.7.12", features = ["io"] }
+tracing = "0.1.40"
 tracing-error = "0.2.0"
-tracing-subscriber = { version = "0.3.17", optional = true, features = ["env-filter", "time"] }
-uuid = { version = "1.4.1", features = ["v4"] }
-anyhow = "1.0.80"
+tracing-subscriber = { version = "0.3.18", optional = true, features = ["env-filter", "time"] }
+uuid = { version = "1.11.0", features = ["v4"] }
+anyhow = "1.0.91"
 bytestring = "1.3.1"
-async-tempfile = "0.5.0"
-tempfile = "3.10.1"
-homedir = "0.3.3"
-clap-verbosity-flag = "2.2.1"
+async-tempfile = "0.6.0"
+tempfile = "3.13.0"
+homedir = "0.3.4"
+clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
 
-fvm_shared = "4.1.0"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="e423a7a8595637748aa0e4fe74f6f69ce61077a0"}
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="e423a7a8595637748aa0e4fe74f6f69ce61077a0"}
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="e423a7a8595637748aa0e4fe74f6f69ce61077a0"}
-ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "fa2d30c84708bef2dfd458c519b9d1e3a6cdd04a"}
-fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "fa2d30c84708bef2dfd458c519b9d1e3a6cdd04a"}
-fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "fa2d30c84708bef2dfd458c519b9d1e3a6cdd04a"}
-fendermint_actor_objectstore = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "fa2d30c84708bef2dfd458c519b9d1e3a6cdd04a"}
-fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "fa2d30c84708bef2dfd458c519b9d1e3a6cdd04a"}
+fvm_shared = "4.1.2"
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="1986aface3533b18ff1997c611b93bdb5a9e1302"}
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="1986aface3533b18ff1997c611b93bdb5a9e1302"}
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="1986aface3533b18ff1997c611b93bdb5a9e1302"}
+ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "ca0bb06cf45c7e1e302c412d7e51f1a7a73e39e2"}
+fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "45f2dcd677252f428b0989245a01ef8632852abf"}
+fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "45f2dcd677252f428b0989245a01ef8632852abf"}
+fendermint_actor_bucket = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "45f2dcd677252f428b0989245a01ef8632852abf"}
+fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "45f2dcd677252f428b0989245a01ef8632852abf"}
 tendermint-rpc = { version = "0.31.1", features = [
     "secp256k1",
     "http-client",
@@ -67,11 +67,11 @@ tendermint-rpc = { version = "0.31.1", features = [
 
 
 [dev-dependencies]
-anyhow = { version = "1.0.73", features = ["backtrace"] }
-aws-config = { version = "1.1.2", default-features = false }
-aws-credential-types = { version = "1.1.2", features = ["test-util"] }
-aws-sdk-s3 = { version = "1.12.0", features = ["behavior-version-latest"] }
-once_cell = "1.18.0"
-s3s-aws = "0.10.0"
-tokio = { version = "1.31.0", features = ["full"] }
-tracing-subscriber = { version = "0.3.17", features = ["env-filter", "time"] }
+anyhow = { version = "1.0.91", features = ["backtrace"] }
+aws-config = { version = "1.5.9", default-features = false }
+aws-credential-types = { version = "1.2.1", features = ["test-util"] }
+aws-sdk-s3 = { version = "1.58.0", features = ["behavior-version-latest"] }
+once_cell = "1.20.2"
+s3s-aws = "0.10.1"
+tokio = { version = "1.41.0", features = ["full"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "time"] }

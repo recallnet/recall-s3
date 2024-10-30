@@ -15,11 +15,11 @@ use fendermint_vm_message::query::FvmQueryHeight;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use hoku_provider::message::GasParams;
-use hoku_sdk::machine::objectstore::AddOptions;
-use hoku_sdk::machine::objectstore::DeleteOptions;
-use hoku_sdk::machine::objectstore::GetOptions;
-use hoku_sdk::machine::objectstore::ObjectStore;
-use hoku_sdk::machine::objectstore::QueryOptions;
+use hoku_sdk::machine::bucket::AddOptions;
+use hoku_sdk::machine::bucket::Bucket;
+use hoku_sdk::machine::bucket::DeleteOptions;
+use hoku_sdk::machine::bucket::GetOptions;
+use hoku_sdk::machine::bucket::QueryOptions;
 use hoku_sdk::machine::Machine;
 use hoku_signer::Signer;
 use ipc_api::evm::payload_to_evm_address;
@@ -152,7 +152,7 @@ where
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
         };
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -211,7 +211,7 @@ where
             return Err(s3_error!(NoSuchBucket));
         };
 
-        let machine = ObjectStore::attach(src_address)
+        let machine = Bucket::attach(src_address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -252,7 +252,7 @@ where
             return Err(s3_error!(NoSuchBucket));
         };
 
-        let machine = ObjectStore::attach(dst_address)
+        let machine = Bucket::attach(dst_address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -339,7 +339,7 @@ where
 
         let creation_date = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
 
-        let (machine, _) = ObjectStore::new(
+        let (machine, _) = Bucket::new(
             self.provider.deref(),
             &mut wallet,
             None,
@@ -406,7 +406,7 @@ where
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
         };
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -446,7 +446,7 @@ where
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
         };
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -484,7 +484,7 @@ where
             return Err(s3_error!(NoSuchBucket));
         };
 
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -584,7 +584,7 @@ where
             return Err(s3_error!(NoSuchBucket));
         };
 
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -644,11 +644,11 @@ where
             Some(w) => w.clone(),
             None => unreachable!(),
         };
-        let list = ObjectStore::list(self.provider.deref(), &wallet, FvmQueryHeight::Committed)
+        let list = Bucket::list(self.provider.deref(), &wallet, FvmQueryHeight::Committed)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        let mut buckets: Vec<Bucket> = Vec::new();
+        let mut buckets: Vec<s3s::dto::Bucket> = Vec::new();
 
         for data in list {
             let creation_date = data
@@ -662,7 +662,7 @@ where
                 .cloned()
                 .or(Some(data.address.to_string()));
 
-            let bucket = Bucket {
+            let bucket = s3s::dto::Bucket {
                 name,
                 creation_date,
             };
@@ -707,7 +707,7 @@ where
             return Err(s3_error!(NoSuchBucket));
         };
 
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
@@ -807,7 +807,7 @@ where
             return Err(s3_error!(IncompleteBody));
         };
 
-        let machine = ObjectStore::attach(address)
+        let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 

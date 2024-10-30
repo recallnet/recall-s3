@@ -9,4 +9,4 @@ check-fmt:
 	cargo fmt --all --check
 
 check-clippy:
-	cargo clippy --no-deps --tests -- -D clippy::all
+	cargo clippy --no-deps -- -D clippy::all

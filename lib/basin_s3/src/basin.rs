@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use crate::bucket::BucketNameWithOwner;
 use bytestring::ByteString;
-use fendermint_actor_objectstore::Object;
+use fendermint_actor_bucket::Object;
 use fendermint_vm_message::query::FvmQueryHeight;
 use fvm_shared::address::Address;
 use hoku_provider::json_rpc::JsonRpcProvider;
-use hoku_sdk::machine::objectstore::{ObjectStore, QueryOptions};
+use hoku_sdk::machine::bucket::{Bucket, QueryOptions};
 use hoku_sdk::machine::Machine;
 use hoku_signer::{Signer, Void};
 use s3s::dto::{ObjectKey, PartNumber};
@@ -51,11 +51,7 @@ where
             .join(format!(".upload-{upload_id}.part-{part_number}.json"))
     }
 
-    pub async fn get_object(
-        &self,
-        machine: &ObjectStore,
-        key: &ObjectKey,
-    ) -> Result<Object, S3Error> {
+    pub async fn get_object(&self, machine: &Bucket, key: &ObjectKey) -> Result<Object, S3Error> {
         let object_list = machine
             .query(
                 self.provider.deref(),
@@ -84,7 +80,7 @@ where
         bucket: &BucketNameWithOwner,
     ) -> Result<Option<Address>, S3Error> {
         let signer = &Void::new(bucket.owner());
-        let list = ObjectStore::list(self.provider.deref(), signer, FvmQueryHeight::Committed)
+        let list = Bucket::list(self.provider.deref(), signer, FvmQueryHeight::Committed)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
