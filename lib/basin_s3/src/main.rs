@@ -4,7 +4,7 @@
 use std::io::IsTerminal;
 
 use basin_s3::Basin;
-use clap::{CommandFactory, Parser, ValueEnum};
+use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
 use fendermint_crypto::SecretKey;
 use hoku_provider::json_rpc::JsonRpcProvider;
@@ -41,16 +41,24 @@ struct Cli {
     private_key: Option<SecretKey>,
 
     /// Access key used for authentication.
-    #[arg(long, env)]
+    #[arg(long, env, requires("secret_key"))]
     access_key: Option<String>,
 
     /// Secret key used for authentication.
-    #[arg(long, env)]
+    #[arg(long, env, requires("access_key"))]
     secret_key: Option<String>,
 
     /// Domain name used for virtual-hosted-style requests.
-    #[arg(long, env)]
+    #[arg(long, env, value_parser = validate_domain)]
     domain_name: Option<String>,
+}
+
+fn validate_domain(input: &str) -> Result<String, &'static str> {
+    if input.contains('/') {
+        Err("invalid domain")
+    } else {
+        Ok(input.to_owned())
+    }
 }
 
 fn setup_tracing(cli: &Cli) {
@@ -70,28 +78,8 @@ fn setup_tracing(cli: &Cli) {
         .init();
 }
 
-fn check_cli_args(cli: &Cli) {
-    use clap::error::ErrorKind;
-
-    let mut cmd = Cli::command();
-
-    // TODO: how to specify the requirements with clap derive API?
-    if let (Some(_), None) | (None, Some(_)) = (&cli.access_key, &cli.secret_key) {
-        let msg = "access key and secret key must be specified together";
-        cmd.error(ErrorKind::MissingRequiredArgument, msg).exit();
-    }
-
-    if let Some(ref s) = cli.domain_name {
-        if s.contains('/') {
-            let msg = format!("expected domain name, found URL-like string: {s:?}");
-            cmd.error(ErrorKind::InvalidValue, msg).exit();
-        }
-    }
-}
-
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    check_cli_args(&cli);
     setup_tracing(&cli);
     run(cli)
 }
