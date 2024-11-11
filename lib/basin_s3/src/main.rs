@@ -197,6 +197,8 @@ enum Network {
     Localnet,
     /// Network presets for local development.
     Devnet,
+    /// Ignition network
+    Ignition,
 }
 
 impl Network {
@@ -206,6 +208,7 @@ impl Network {
             Network::Testnet => SdkNetwork::Testnet,
             Network::Localnet => SdkNetwork::Localnet,
             Network::Devnet => SdkNetwork::Devnet,
+            Network::Ignition => SdkNetwork::Ignition,
         }
     }
 }
