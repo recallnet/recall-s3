@@ -4,17 +4,20 @@
 use std::io::IsTerminal;
 
 use basin_s3::Basin;
-use clap::{CommandFactory, Parser, ValueEnum};
+use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
 use fendermint_crypto::SecretKey;
+use fvm_shared::address;
 use hoku_provider::json_rpc::JsonRpcProvider;
 use hoku_sdk::network::Network as SdkNetwork;
+use hoku_signer::SubnetID;
 use hoku_signer::{key::parse_secret_key, AccountKind, Wallet};
 use homedir::my_home;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto::Builder as ConnBuilder;
 use s3s::auth::SimpleAuth;
 use s3s::service::S3ServiceBuilder;
+use tendermint_rpc::Url;
 use tokio::net::TcpListener;
 use tracing::info;
 
@@ -41,16 +44,36 @@ struct Cli {
     private_key: Option<SecretKey>,
 
     /// Access key used for authentication.
-    #[arg(long, env)]
+    #[arg(long, env, requires("secret_key"))]
     access_key: Option<String>,
 
     /// Secret key used for authentication.
-    #[arg(long, env)]
+    #[arg(long, env, requires("access_key"))]
     secret_key: Option<String>,
 
     /// Domain name used for virtual-hosted-style requests.
-    #[arg(long, env)]
+    #[arg(long, env, value_parser = validate_domain)]
     domain_name: Option<String>,
+
+    /// Subnet ID for custom network
+    #[arg(long, env, required_if_eq("network", "custom"))]
+    subnet_id: Option<SubnetID>,
+
+    /// RPC URL for custom network
+    #[arg(long, env, required_if_eq("network", "custom"))]
+    rpc_url: Option<Url>,
+
+    /// Object API URL for custom network
+    #[arg(long, env, required_if_eq("network", "custom"))]
+    object_api_url: Option<Url>,
+}
+
+fn validate_domain(input: &str) -> Result<String, &'static str> {
+    if input.contains('/') {
+        Err("invalid domain")
+    } else {
+        Ok(input.to_owned())
+    }
 }
 
 fn setup_tracing(cli: &Cli) {
@@ -70,40 +93,20 @@ fn setup_tracing(cli: &Cli) {
         .init();
 }
 
-fn check_cli_args(cli: &Cli) {
-    use clap::error::ErrorKind;
-
-    let mut cmd = Cli::command();
-
-    // TODO: how to specify the requirements with clap derive API?
-    if let (Some(_), None) | (None, Some(_)) = (&cli.access_key, &cli.secret_key) {
-        let msg = "access key and secret key must be specified together";
-        cmd.error(ErrorKind::MissingRequiredArgument, msg).exit();
-    }
-
-    if let Some(ref s) = cli.domain_name {
-        if s.contains('/') {
-            let msg = format!("expected domain name, found URL-like string: {s:?}");
-            cmd.error(ErrorKind::InvalidValue, msg).exit();
-        }
-    }
-}
-
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    check_cli_args(&cli);
     setup_tracing(&cli);
     run(cli)
 }
 
 #[tokio::main]
 async fn run(cli: Cli) -> anyhow::Result<()> {
-    cli.network.get().init();
+    let network_def = NetworkDefinition::new(&cli)?;
+    address::set_current_network(network_def.address_network);
 
-    let network = cli.network.get();
     // Setup network provider
     let provider =
-        JsonRpcProvider::new_http(network.rpc_url()?, None, Some(network.object_api_url()?))?;
+        JsonRpcProvider::new_http(network_def.rpc_url, None, Some(network_def.object_api_url))?;
 
     let root = my_home()?.unwrap().join(".s3-basin");
     std::fs::create_dir_all(&root)?;
@@ -112,7 +115,7 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         Some(sk) => {
             // Setup local wallet using private key from arg
             let mut wallet =
-                Wallet::new_secp256k1(sk, AccountKind::Ethereum, network.subnet_id()?)?;
+                Wallet::new_secp256k1(sk, AccountKind::Ethereum, network_def.subnet_id)?;
             wallet.init_sequence(&provider).await?;
             Basin::new(root, provider, Some(wallet))?
         }
@@ -197,15 +200,51 @@ enum Network {
     Localnet,
     /// Network presets for local development.
     Devnet,
+    /// Ignition network
+    Ignition,
+    /// Custom network definition
+    Custom,
 }
 
 impl Network {
-    pub fn get(&self) -> SdkNetwork {
+    pub fn get(&self) -> Option<SdkNetwork> {
         match self {
-            Network::Mainnet => SdkNetwork::Mainnet,
-            Network::Testnet => SdkNetwork::Testnet,
-            Network::Localnet => SdkNetwork::Localnet,
-            Network::Devnet => SdkNetwork::Devnet,
+            Network::Mainnet => Some(SdkNetwork::Mainnet),
+            Network::Testnet => Some(SdkNetwork::Testnet),
+            Network::Localnet => Some(SdkNetwork::Localnet),
+            Network::Devnet => Some(SdkNetwork::Devnet),
+            Network::Ignition => Some(SdkNetwork::Ignition),
+            Network::Custom => None,
+        }
+    }
+}
+
+struct NetworkDefinition {
+    subnet_id: SubnetID,
+    rpc_url: Url,
+    object_api_url: Url,
+    address_network: address::Network,
+}
+
+impl NetworkDefinition {
+    fn new(cli: &Cli) -> Result<Self, anyhow::Error> {
+        match cli.network.get() {
+            Some(network) => Ok(Self {
+                address_network: if network == SdkNetwork::Mainnet {
+                    address::Network::Mainnet
+                } else {
+                    address::Network::Testnet
+                },
+                rpc_url: network.rpc_url()?,
+                object_api_url: network.object_api_url()?,
+                subnet_id: network.subnet_id()?,
+            }),
+            None => Ok(Self {
+                address_network: address::Network::Testnet,
+                subnet_id: cli.subnet_id.clone().unwrap(),
+                rpc_url: cli.rpc_url.clone().unwrap(),
+                object_api_url: cli.object_api_url.clone().unwrap(),
+            }),
         }
     }
 }
