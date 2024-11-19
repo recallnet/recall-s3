@@ -51,9 +51,9 @@ clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
 
 fvm_shared = "4.1.2"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="bb2739021cf21701b01cd066ad28a1b1550590cc"}
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="bb2739021cf21701b01cd066ad28a1b1550590cc"}
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="bb2739021cf21701b01cd066ad28a1b1550590cc"}
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d442dbe7152717191af7912da7473e4fcacf95e5"}
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d442dbe7152717191af7912da7473e4fcacf95e5"}
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d442dbe7152717191af7912da7473e4fcacf95e5"}
 ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
 fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
 fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
