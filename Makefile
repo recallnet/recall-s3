@@ -1,3 +1,9 @@
+default:
+	cargo build --locked --release
+
+install:
+	cargo install --locked --path lib/basin_s3 --features="binary"
+
 clean:
 	cargo clean
 
