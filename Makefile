@@ -1,5 +1,6 @@
 default:
-	cargo build --locked --release
+	cargo build --locked --release --features="binary"
+	./target/release/basin_s3 --version
 
 install:
 	cargo install --locked --path lib/basin_s3 --features="binary"
