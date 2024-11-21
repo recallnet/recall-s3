@@ -30,7 +30,7 @@ cargo run --features binary -- --private-key [PRIVATE_KEY] --access-key AKEXAMPL
 ```
 In read-only mode, just omit the private key.
 
-You can point the adapter to a specific Basin network by providing the `--network` flag. By default, it points to `testnet`. For development, you can use `localnet` or `devnet`.  
+You can point the adapter to a specific Basin network by providing the `--network` flag. By default, it points to `ignition`. For development, you can use `localnet` or `devnet`.  
 
 # Development
 
