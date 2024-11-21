@@ -36,7 +36,7 @@ struct Cli {
     port: u16,
 
     /// Network presets for subnet and RPC URLs.
-    #[arg(short, long, env, value_enum, default_value_t = Network::Testnet)]
+    #[arg(short, long, env, value_enum, default_value_t = Network::Ignition)]
     network: Network,
 
     /// Wallet private key (ECDSA, secp256k1) for signing transactions.
