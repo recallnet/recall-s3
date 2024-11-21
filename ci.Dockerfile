@@ -1,11 +1,9 @@
 FROM rust:1.80-slim-bookworm as builder
 USER root
 
-ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
-
 COPY /root-config /root/
-RUN sed 's|/home/runner|/root|g' -i.bak /root/.ssh/config
-RUN mv /root/.gitconfig /etc/gitconfig
+RUN sed -E 's|/home/ghrunner[0-9]?|/root|g' -i.bak /root/.ssh/config
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 RUN apt-get update && apt-get install --yes pkg-config libssl-dev ca-certificates ssh git
 RUN update-ca-certificates
@@ -20,7 +18,12 @@ COPY ./Cargo.toml ./Cargo.toml
 COPY ./lib ./lib
 
 RUN rustup component add rustfmt
-RUN --mount=type=ssh cargo build --features binary --release
+RUN \
+  --mount=type=ssh \
+  --mount=type=cache,target=/root/.cargo/registry,sharing=locked \
+  --mount=type=cache,target=/root/.cargo/git,sharing=locked \
+  --mount=type=cache,target=/app/target,sharing=locked \
+  cargo build --features binary --release
 
 FROM debian:bookworm-slim
 
