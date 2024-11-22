@@ -65,6 +65,12 @@ tendermint-rpc = { version = "0.31.1", features = [
     "websocket-client",
 ] }
 
+# Vendored for cross-compilation, see https://github.com/cross-rs/cross/wiki/Recipes#openssl
+# Make sure every top level build target actually imports this dependency, and don't end up
+# depending on the same _without_ the "vendored" feature, because then the Docker build for
+# for ARM64 on AMD64 will fail, it won't find the OpenSSL installation.
+openssl = { version = "0.10", features = ["vendored"] }
+
 
 [dev-dependencies]
 anyhow = { version = "1.0.91", features = ["backtrace"] }
