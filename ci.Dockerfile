@@ -1,40 +1,73 @@
-FROM rust:1.80-slim-bookworm as builder
+FROM --platform=$BUILDPLATFORM ubuntu:jammy AS builder
 USER root
+
+RUN apt-get update && \
+  apt-get install -y build-essential clang cmake protobuf-compiler curl \
+  openssl libssl-dev pkg-config git-core
+
+# Get Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+  CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
+  CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+
+WORKDIR /app
+
+# Update the version here if our `rust-toolchain.toml` would cause something new to be fetched every time.
+ARG RUST_VERSION=1.82.0
+RUN \
+  rustup install ${RUST_VERSION} && \
+  rustup default ${RUST_VERSION} && \
+  rustup target add aarch64-unknown-linux-gnu
+
+# Defined here so anything above it can be cached as a common dependency.
+ARG TARGETARCH
+
+# Only installing MacOS specific libraries if necessary.
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+  apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross; \
+  rustup target add aarch64-unknown-linux-gnu; \
+  rustup toolchain install ${RUST_VERSION}-aarch64-unknown-linux-gnu; \
+  fi
+
 
 COPY /root-config /root/
 RUN sed -E 's|/home/ghrunner[0-9]?|/root|g' -i.bak /root/.ssh/config
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-RUN apt-get update && apt-get install --yes pkg-config libssl-dev ca-certificates ssh git
-RUN update-ca-certificates
-RUN mkdir /basin-s3
-WORKDIR /basin-s3
-
 RUN rm -rf ~/.ssh/known_hosts && \
+    umask 077; mkdir -p ~/.ssh && \
     ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
 COPY ./lib ./lib
 
-RUN rustup component add rustfmt
 RUN \
   --mount=type=ssh \
   --mount=type=cache,target=/root/.cargo/registry,sharing=locked \
   --mount=type=cache,target=/root/.cargo/git,sharing=locked \
   --mount=type=cache,target=/app/target,sharing=locked \
-  cargo build --features binary --release
+  set -eux; \
+  case "${TARGETARCH}" in \
+  amd64) ARCH='x86_64'  ;; \
+  arm64) ARCH='aarch64' ;; \
+  esac; \
+  rustup show ; \
+  cargo build --features binary --release --locked --target ${ARCH}-unknown-linux-gnu; \
+  mv ./target/${ARCH}-unknown-linux-gnu/release/basin_s3 ./
 
-FROM debian:bookworm-slim
+FROM --platform=$BUILDPLATFORM debian:bookworm-slim
 
-# copy the build artifact from the build stage
-COPY --from=builder /usr/bin/openssl /usr/bin/openssl
-COPY --from=builder /usr/lib/ /usr/lib/
-COPY --from=builder /usr/share/ca-certificates/ /usr/share/ca-certificates/
-COPY --from=builder /usr/local/share/ca-certificates/ /usr/local/share/ca-certificates/
-COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+RUN apt-get update && \
+  apt-get install -y libssl3 ca-certificates curl && \
+  rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /basin-s3/target/release/basin_s3 .
+RUN update-ca-certificates
+
+COPY --from=builder /app/basin_s3 .
 
 EXPOSE 8014
 
