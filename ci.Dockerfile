@@ -1,9 +1,10 @@
-FROM --platform=$BUILDPLATFORM ubuntu:jammy AS builder
+FROM --platform=$BUILDPLATFORM debian:bookworm-slim AS builder
 USER root
 
 RUN apt-get update && \
   apt-get install -y build-essential clang cmake protobuf-compiler curl \
-  openssl libssl-dev pkg-config git-core
+  openssl libssl-dev pkg-config git-core ca-certificates && \
+  update-ca-certificates
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
@@ -59,14 +60,9 @@ RUN \
   cargo build --features binary --release --locked --target ${ARCH}-unknown-linux-gnu; \
   mv ./target/${ARCH}-unknown-linux-gnu/release/basin_s3 ./
 
-FROM --platform=$BUILDPLATFORM debian:bookworm-slim
+FROM debian:bookworm-slim
 
-RUN apt-get update && \
-  apt-get install -y libssl3 ca-certificates curl && \
-  rm -rf /var/lib/apt/lists/*
-
-RUN update-ca-certificates
-
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 COPY --from=builder /app/basin_s3 .
 
 EXPOSE 8014
