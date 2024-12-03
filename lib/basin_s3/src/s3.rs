@@ -23,8 +23,10 @@ use hoku_sdk::machine::bucket::QueryOptions;
 use hoku_sdk::machine::Machine;
 use hoku_signer::Signer;
 use ipc_api::evm::payload_to_evm_address;
+use lazy_static::lazy_static;
 use md5::Digest;
 use md5::Md5;
+use prometheus::{register_int_counter_vec, IntCounterVec};
 use s3s::dto::*;
 use s3s::s3_error;
 use s3s::S3Error;
@@ -46,6 +48,38 @@ static CREATION_DATE_METADATA_KEY: &str = "creation_date";
 static ETAG_METADATA_KEY: &str = "etag";
 pub static ALIAS_METADATA_KEY: &str = "alias";
 
+lazy_static! {
+    static ref COUNTER_S3_ACTIONS: IntCounterVec = register_int_counter_vec!(
+        "basin_s3_call",
+        "Number of S3 calls.",
+        &["action", "status"]
+    )
+    .unwrap();
+}
+
+struct S3ActionCounter {
+    action: &'static str,
+    success: bool,
+}
+
+impl S3ActionCounter {
+    fn new(action: &'static str) -> Self {
+        Self {
+            action,
+            success: false,
+        }
+    }
+}
+
+impl Drop for S3ActionCounter {
+    fn drop(&mut self) {
+        let status = if self.success { "success" } else { "error" };
+        COUNTER_S3_ACTIONS
+            .with_label_values(&[self.action, status])
+            .inc();
+    }
+}
+
 #[async_trait::async_trait]
 impl<C, S> S3 for Basin<C, S>
 where
@@ -57,6 +91,7 @@ where
         &self,
         req: S3Request<AbortMultipartUploadInput>,
     ) -> S3Result<S3Response<AbortMultipartUploadOutput>> {
+        let mut action_counter = S3ActionCounter::new("abort_multipart_upload");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -84,6 +119,7 @@ where
                 try_!(fs::remove_file(entry.path()).await);
             }
         }
+        action_counter.success = true;
         Ok(S3Response::new(AbortMultipartUploadOutput {
             ..Default::default()
         }))
@@ -94,6 +130,7 @@ where
         &self,
         req: S3Request<CompleteMultipartUploadInput>,
     ) -> S3Result<S3Response<CompleteMultipartUploadOutput>> {
+        let mut action_counter = S3ActionCounter::new("complete_multipart_upload");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -183,6 +220,7 @@ where
             key: Some(key),
             ..Default::default()
         };
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -191,6 +229,7 @@ where
         &self,
         req: S3Request<CopyObjectInput>,
     ) -> S3Result<S3Response<CopyObjectOutput>> {
+        let mut action_counter = S3ActionCounter::new("copy_object");
         let input = req.input;
         let (src_bucket, src_key) = match input.copy_source {
             CopySource::AccessPoint { .. } => return Err(s3_error!(NotImplemented)),
@@ -299,6 +338,7 @@ where
             ..Default::default()
         };
 
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -307,6 +347,7 @@ where
         &self,
         req: S3Request<CreateBucketInput>,
     ) -> S3Result<S3Response<CreateBucketOutput>> {
+        let mut action_counter = S3ActionCounter::new("create_bucket");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -358,6 +399,7 @@ where
 
         let address = machine.address().to_string();
 
+        action_counter.success = true;
         Ok(S3Response::new(CreateBucketOutput {
             location: Some(address),
         }))
@@ -368,6 +410,7 @@ where
         &self,
         req: S3Request<CreateMultipartUploadInput>,
     ) -> S3Result<S3Response<CreateMultipartUploadOutput>> {
+        let mut action_counter = S3ActionCounter::new("create_multipart_upload");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -385,6 +428,7 @@ where
             ..Default::default()
         };
 
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -393,6 +437,7 @@ where
         &self,
         req: S3Request<DeleteObjectInput>,
     ) -> S3Result<S3Response<DeleteObjectOutput>> {
+        let mut action_counter = S3ActionCounter::new("delete_object");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -426,6 +471,7 @@ where
 
         debug!(hash = ?tx.hash, status = ?tx.status);
 
+        action_counter.success = true;
         let output = DeleteObjectOutput::default(); // TODO: handle other fields
         Ok(S3Response::new(output))
     }
@@ -435,6 +481,7 @@ where
         &self,
         req: S3Request<DeleteObjectsInput>,
     ) -> S3Result<S3Response<DeleteObjectsOutput>> {
+        let mut action_counter = S3ActionCounter::new("delete_objects");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -468,6 +515,7 @@ where
             debug!(hash = ?tx.hash, status = ?tx.status);
         }
 
+        action_counter.success = true;
         let output = DeleteObjectsOutput::default(); // TODO: handle other fields
         Ok(S3Response::new(output))
     }
@@ -477,6 +525,7 @@ where
         &self,
         req: S3Request<GetObjectInput>,
     ) -> S3Result<S3Response<GetObjectOutput>> {
+        let mut action_counter = S3ActionCounter::new("get_object");
         let input = req.input;
         let bucket = BucketNameWithOwner::from(input.bucket)?;
 
@@ -552,6 +601,7 @@ where
             last_modified,
             ..Default::default()
         };
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -560,6 +610,7 @@ where
         &self,
         req: S3Request<HeadBucketInput>,
     ) -> S3Result<S3Response<HeadBucketOutput>> {
+        let mut action_counter = S3ActionCounter::new("head_bucket");
         let input = req.input;
         let bucket = BucketNameWithOwner::from(input.bucket)?;
 
@@ -567,6 +618,7 @@ where
             return Err(s3_error!(NoSuchBucket));
         };
 
+        action_counter.success = true;
         Ok(S3Response::new(HeadBucketOutput {
             ..Default::default()
         }))
@@ -577,6 +629,7 @@ where
         &self,
         req: S3Request<HeadObjectInput>,
     ) -> S3Result<S3Response<HeadObjectOutput>> {
+        let mut action_counter = S3ActionCounter::new("head_object");
         let input = req.input;
         let bucket = BucketNameWithOwner::from(input.bucket)?;
 
@@ -625,6 +678,7 @@ where
             metadata: None,
             ..Default::default()
         };
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -633,6 +687,7 @@ where
         &self,
         _: S3Request<ListBucketsInput>,
     ) -> S3Result<S3Response<ListBucketsOutput>> {
+        let mut action_counter = S3ActionCounter::new("list_buckets");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -673,6 +728,7 @@ where
             buckets: Some(buckets),
             owner: None,
         };
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -681,8 +737,10 @@ where
         &self,
         req: S3Request<ListObjectsInput>,
     ) -> S3Result<S3Response<ListObjectsOutput>> {
+        let mut action_counter = S3ActionCounter::new("list_objects");
         let v2_resp = self.list_objects_v2(req.map_input(Into::into)).await?;
 
+        action_counter.success = true;
         Ok(v2_resp.map_output(|v2| ListObjectsOutput {
             contents: v2.contents,
             delimiter: v2.delimiter,
@@ -700,6 +758,7 @@ where
         &self,
         req: S3Request<ListObjectsV2Input>,
     ) -> S3Result<S3Response<ListObjectsV2Output>> {
+        let mut action_counter = S3ActionCounter::new("list_objects_v2");
         let input: ListObjectsV2Input = req.input;
         let bucket = BucketNameWithOwner::from(input.bucket)?;
 
@@ -776,6 +835,7 @@ where
             ..Default::default()
         };
 
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -784,6 +844,7 @@ where
         &self,
         req: S3Request<PutObjectInput>,
     ) -> S3Result<S3Response<PutObjectOutput>> {
+        let mut action_counter = S3ActionCounter::new("put_object");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -863,6 +924,7 @@ where
             ..Default::default()
         };
 
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -871,6 +933,7 @@ where
         &self,
         req: S3Request<UploadPartInput>,
     ) -> S3Result<S3Response<UploadPartOutput>> {
+        let mut action_counter = S3ActionCounter::new("upload_part");
         if self.is_read_only {
             return Err(s3_error!(
                 NotImplemented,
@@ -902,6 +965,7 @@ where
             e_tag: Some(format!("\"{md5_sum}\"")),
             ..Default::default()
         };
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 
@@ -910,7 +974,9 @@ where
         &self,
         _req: S3Request<GetBucketLocationInput>,
     ) -> S3Result<S3Response<GetBucketLocationOutput>> {
+        let mut action_counter = S3ActionCounter::new("get_bucket_location");
         let output = GetBucketLocationOutput::default();
+        action_counter.success = true;
         Ok(S3Response::new(output))
     }
 }

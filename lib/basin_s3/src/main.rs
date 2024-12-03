@@ -2,7 +2,9 @@
 #![deny(clippy::all, clippy::pedantic)]
 
 use std::io::IsTerminal;
+use std::net::SocketAddr;
 
+use anyhow::Context;
 use basin_s3::Basin;
 use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
@@ -66,6 +68,10 @@ struct Cli {
     /// Object API URL for custom network
     #[arg(long, env, required_if_eq("network", "custom"))]
     object_api_url: Option<Url>,
+
+    /// Prometheus metrics socket address, e.g. 127.0.0.1:9090
+    #[arg(long, env)]
+    metrics_listen_address: Option<SocketAddr>,
 }
 
 fn validate_domain(input: &str) -> Result<String, &'static str> {
@@ -85,10 +91,10 @@ fn setup_tracing(cli: &Cli) {
     };
 
     let enable_color = std::io::stdout().is_terminal();
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new(log_level));
 
     tracing_subscriber::fmt()
-        .pretty()
-        .with_env_filter(EnvFilter::new(log_level))
+        .with_env_filter(env_filter)
         .with_ansi(enable_color)
         .init();
 }
@@ -140,6 +146,12 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
 
         b.build()
     };
+
+    if let Some(metrics_addr) = cli.metrics_listen_address {
+        let builder = prometheus_exporter::Builder::new(metrics_addr);
+        let _ = builder.start().context("failed to start metrics server")?;
+        info!(addr = %metrics_addr, "running metrics endpoint");
+    }
 
     // Run server
     let listener = TcpListener::bind((cli.host.as_str(), cli.port)).await?;

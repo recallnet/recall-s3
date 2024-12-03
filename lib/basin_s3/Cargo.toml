@@ -64,6 +64,9 @@ tendermint-rpc = { version = "0.31.1", features = [
     "http-client",
     "websocket-client",
 ] }
+prometheus = { version = "0.13", features = ["process"] }
+prometheus_exporter = "0.8"
+lazy_static = "1.5"
 
 # Vendored for cross-compilation, see https://github.com/cross-rs/cross/wiki/Recipes#openssl
 # Make sure every top level build target actually imports this dependency, and don't end up
