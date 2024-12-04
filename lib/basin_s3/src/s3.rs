@@ -48,6 +48,8 @@ static CREATION_DATE_METADATA_KEY: &str = "creation_date";
 static ETAG_METADATA_KEY: &str = "etag";
 pub static ALIAS_METADATA_KEY: &str = "alias";
 
+static MAX_LIST_OBJECTS_KEYS: u64 = 50;
+
 lazy_static! {
     static ref COUNTER_S3_ACTIONS: IntCounterVec = register_int_counter_vec!(
         "basin_s3_call",
@@ -749,6 +751,9 @@ where
             prefix: v2.prefix,
             common_prefixes: v2.common_prefixes,
             max_keys: v2.max_keys,
+            is_truncated: v2.is_truncated,
+            marker: v2.continuation_token,
+            next_marker: v2.next_continuation_token,
             ..Default::default()
         }))
     }
@@ -780,12 +785,20 @@ where
             None => String::new(),
         };
 
+        let limit = input.max_keys.map_or(MAX_LIST_OBJECTS_KEYS, |v| v as u64);
+        let start_key = input
+            .continuation_token
+            .clone()
+            .map(|v| v.as_bytes().to_vec());
+
         let response = machine
             .query(
                 self.provider.deref(),
                 QueryOptions {
                     prefix,
                     delimiter,
+                    start_key,
+                    limit,
                     ..Default::default()
                 },
             )
@@ -822,16 +835,24 @@ where
         }
 
         let key_count = try_!(i32::try_from(objects.len()));
+        let next_continuation_token = response
+            .next_key
+            .map(|key| std::str::from_utf8(&key).unwrap().into());
 
         let output = ListObjectsV2Output {
             key_count: Some(key_count),
-            max_keys: Some(key_count),
+            max_keys: Some(try_!(MAX_LIST_OBJECTS_KEYS.try_into())),
             contents: Some(objects),
             delimiter: input.delimiter,
             common_prefixes: Some(common_prefixes),
             encoding_type: input.encoding_type,
             name: Some(bucket.name()),
             prefix: input.prefix,
+            is_truncated: next_continuation_token
+                .as_ref()
+                .map_or(false.into(), |_| true.into()),
+            continuation_token: input.continuation_token,
+            next_continuation_token,
             ..Default::default()
         };
 

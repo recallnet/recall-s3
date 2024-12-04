@@ -1307,7 +1307,7 @@ dependencies = [
  "multihash",
  "serde",
  "serde_bytes",
- "unsigned-varint",
+ "unsigned-varint 0.7.2",
 ]
 
 [[package]]
@@ -2799,10 +2799,12 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_blobs_shared"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
+ "blake3",
  "data-encoding",
+ "fendermint_actor_machine",
  "fil_actors_runtime",
  "frc42_dispatch",
  "fvm_ipld_encoding",
@@ -2816,7 +2818,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_bucket"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
@@ -2826,7 +2828,7 @@ dependencies = [
  "frc42_dispatch",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt 0.9.0",
+ "fvm_ipld_hamt",
  "fvm_shared",
  "log",
  "num-derive 0.3.3",
@@ -2838,7 +2840,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_eam"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
@@ -2859,7 +2861,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_machine"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "fil_actor_adm",
@@ -2868,6 +2870,7 @@ dependencies = [
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
  "fvm_shared",
+ "num-traits",
  "serde",
  "serde_tuple",
 ]
@@ -2875,10 +2878,11 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_timehub"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
+ "fendermint_actor_blobs_shared",
  "fendermint_actor_machine",
  "fil_actors_runtime",
  "frc42_dispatch",
@@ -2897,7 +2901,7 @@ dependencies = [
 [[package]]
 name = "fendermint_crypto"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -2909,7 +2913,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_actor_interface"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
@@ -2920,7 +2924,7 @@ dependencies = [
  "fil_actors_evm_shared",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt 0.9.0",
+ "fvm_ipld_hamt",
  "fvm_shared",
  "hex",
  "ipc-api",
@@ -2937,7 +2941,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "cid",
  "fnv",
@@ -2951,7 +2955,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_encoding"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "cid",
  "fvm_shared",
@@ -2964,7 +2968,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_genesis"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "fendermint_actor_eam",
@@ -2982,12 +2986,13 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_message"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "blake2b_simd",
  "cid",
  "ethers-core",
+ "fendermint_actor_blobs_shared",
  "fendermint_crypto",
  "fendermint_vm_actor_interface",
  "fendermint_vm_encoding",
@@ -3032,8 +3037,8 @@ checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 
 [[package]]
 name = "fil_actor_adm"
-version = "12.0.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+version = "15.0.0-rc1"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
@@ -3052,8 +3057,8 @@ dependencies = [
 
 [[package]]
 name = "fil_actor_eam"
-version = "12.0.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+version = "15.0.0-rc1"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
@@ -3073,8 +3078,8 @@ dependencies = [
 
 [[package]]
 name = "fil_actors_evm_shared"
-version = "12.0.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+version = "15.0.0-rc1"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "fil_actors_runtime",
  "fvm_ipld_encoding",
@@ -3086,8 +3091,8 @@ dependencies = [
 
 [[package]]
 name = "fil_actors_runtime"
-version = "12.0.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+version = "15.0.0-rc1"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -3098,10 +3103,11 @@ dependencies = [
  "fvm_ipld_bitfield",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt 0.8.0",
+ "fvm_ipld_hamt",
  "fvm_shared",
  "integer-encoding",
  "itertools 0.10.5",
+ "lazy_static",
  "log",
  "multihash",
  "num",
@@ -3113,15 +3119,15 @@ dependencies = [
  "serde_repr",
  "sha2 0.10.8",
  "thiserror",
- "unsigned-varint",
+ "unsigned-varint 0.7.2",
  "vm_api",
 ]
 
 [[package]]
 name = "filecoin-hashers"
-version = "11.1.0"
+version = "13.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18a96fbc8232ba762026e6b4687dedf08ba1b3830148c919a158c21d7720fb62"
+checksum = "85413176cea16bfe171caafab023044820c0033b243b535b19116776ffd3f285"
 dependencies = [
  "anyhow",
  "bellperson",
@@ -3139,9 +3145,9 @@ dependencies = [
 
 [[package]]
 name = "filecoin-proofs"
-version = "16.1.0"
+version = "18.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d5a4daf099aade347b0f23c1dd5b644aad340a223d5b65c37840faedda3092f"
+checksum = "096b8b483f6ed5823150daf6cd22ee8e32b3dabcb4fd70dab70044e73bcab107"
 dependencies = [
  "anyhow",
  "bellperson",
@@ -3173,15 +3179,13 @@ dependencies = [
 
 [[package]]
 name = "filecoin-proofs-api"
-version = "16.1.0"
+version = "18.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64cef9a819a3125ab92269da594daf2f742a3f6b1e03a2493c13a0bda4514b03"
+checksum = "3aea8140d1e2d2ac18347e6121ee24d0e903f9cfdc2eb2ee507932e352c9e7b8"
 dependencies = [
  "anyhow",
- "bellperson",
  "bincode",
  "blstrs",
- "filecoin-hashers",
  "filecoin-proofs",
  "fr32",
  "lazy_static",
@@ -3302,9 +3306,9 @@ dependencies = [
 
 [[package]]
 name = "fr32"
-version = "9.1.0"
+version = "11.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fca9913cf6179723cdc69827661a36d9ac3fea4c6c8c0ee71536417e5b2cf5d6"
+checksum = "627a3f3108ee3287759a45f6d5aafe48b3017509df9b677115f88266d61e0815"
 dependencies = [
  "anyhow",
  "blstrs",
@@ -3316,9 +3320,8 @@ dependencies = [
 
 [[package]]
 name = "frc42_dispatch"
-version = "6.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a1704e27193af21e58435974ff20f2be25cc59338afb89920abdb540ad3182b"
+version = "7.0.0"
+source = "git+https://github.com/filecoin-project/actors-utils?rev=0f8365151f44785f7bead4e5500258fd5c8944e6#0f8365151f44785f7bead4e5500258fd5c8944e6"
 dependencies = [
  "frc42_hasher",
  "frc42_macros",
@@ -3330,9 +3333,8 @@ dependencies = [
 
 [[package]]
 name = "frc42_hasher"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63f58bb50d36d90f5d0fee8391d6e1ed1a2b15ab8da6417dc42d7c78b587479d"
+version = "5.0.0"
+source = "git+https://github.com/filecoin-project/actors-utils?rev=0f8365151f44785f7bead4e5500258fd5c8944e6#0f8365151f44785f7bead4e5500258fd5c8944e6"
 dependencies = [
  "fvm_sdk",
  "fvm_shared",
@@ -3341,9 +3343,8 @@ dependencies = [
 
 [[package]]
 name = "frc42_macros"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a9ce38a981bab5e0d3c0835baa86f83066afe9afaf0aec23cee421f6d8c628e"
+version = "5.0.0"
+source = "git+https://github.com/filecoin-project/actors-utils?rev=0f8365151f44785f7bead4e5500258fd5c8944e6#0f8365151f44785f7bead4e5500258fd5c8944e6"
 dependencies = [
  "blake2b_simd",
  "frc42_hasher",
@@ -3557,7 +3558,7 @@ dependencies = [
  "fvm_ipld_encoding",
  "serde",
  "thiserror",
- "unsigned-varint",
+ "unsigned-varint 0.7.2",
 ]
 
 [[package]]
@@ -3590,26 +3591,6 @@ dependencies = [
 
 [[package]]
 name = "fvm_ipld_hamt"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03a53e14c789449cec999ca0e93d909490c921b967adb7a9ec8f12286fb809bd"
-dependencies = [
- "anyhow",
- "byteorder",
- "cid",
- "forest_hash_utils",
- "fvm_ipld_blockstore",
- "fvm_ipld_encoding",
- "libipld-core",
- "multihash",
- "once_cell",
- "serde",
- "sha2 0.10.8",
- "thiserror",
-]
-
-[[package]]
-name = "fvm_ipld_hamt"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c900736087ff87cc51f669eee2f8e000c80717472242eb3f712aaa059ac3b3"
@@ -3630,11 +3611,10 @@ dependencies = [
 
 [[package]]
 name = "fvm_sdk"
-version = "4.1.2"
+version = "4.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e58331aefe4b5592c59abfd4d94c62b23ea61d1e121202fbc2fb6abd2fcb165"
+checksum = "3b2df521d41de41c34ac712720abdd6e29e68e3ed922554db70dbf8bc49a82b7"
 dependencies = [
- "byteorder",
  "cid",
  "fvm_ipld_encoding",
  "fvm_shared",
@@ -3646,9 +3626,9 @@ dependencies = [
 
 [[package]]
 name = "fvm_shared"
-version = "4.1.2"
+version = "4.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95f9a003148f592d1b24124b27c9a52f00902b23233515b45b65730dbbfc0c03"
+checksum = "bb7838d3fc1eeeb47c7a8e32bdc3b37e6d806ac261cb96e38f15b503df671648"
 dependencies = [
  "anyhow",
  "bitflags 2.6.0",
@@ -3669,7 +3649,7 @@ dependencies = [
  "serde",
  "serde_tuple",
  "thiserror",
- "unsigned-varint",
+ "unsigned-varint 0.8.0",
 ]
 
 [[package]]
@@ -4101,7 +4081,7 @@ checksum = "3688e69b38018fec1557254f64c8dc2cc8ec502890182f395dbb0aa997aa5735"
 [[package]]
 name = "hoku_provider"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=d442dbe7152717191af7912da7473e4fcacf95e5#d442dbe7152717191af7912da7473e4fcacf95e5"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=e3d4bf54f07fa6b93d2d6993b783d7b9055e7427#e3d4bf54f07fa6b93d2d6993b783d7b9055e7427"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4132,7 +4112,7 @@ dependencies = [
 [[package]]
 name = "hoku_sdk"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=d442dbe7152717191af7912da7473e4fcacf95e5#d442dbe7152717191af7912da7473e4fcacf95e5"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=e3d4bf54f07fa6b93d2d6993b783d7b9055e7427#e3d4bf54f07fa6b93d2d6993b783d7b9055e7427"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -4177,7 +4157,7 @@ dependencies = [
 [[package]]
 name = "hoku_signer"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=d442dbe7152717191af7912da7473e4fcacf95e5#d442dbe7152717191af7912da7473e4fcacf95e5"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=e3d4bf54f07fa6b93d2d6993b783d7b9055e7427#e3d4bf54f07fa6b93d2d6993b783d7b9055e7427"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4650,7 +4630,7 @@ dependencies = [
 [[package]]
 name = "ipc-api"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
@@ -4658,7 +4638,7 @@ dependencies = [
  "fnv",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt 0.9.0",
+ "fvm_ipld_hamt",
  "fvm_shared",
  "integer-encoding",
  "ipc-types",
@@ -4678,14 +4658,14 @@ dependencies = [
 [[package]]
 name = "ipc-types"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
  "fvm_ipld_amt",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt 0.9.0",
+ "fvm_ipld_hamt",
  "fvm_shared",
  "hex",
  "indexmap 1.9.3",
@@ -4702,7 +4682,7 @@ dependencies = [
 [[package]]
 name = "ipc_actors_abis"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "ethers",
@@ -5472,7 +5452,7 @@ dependencies = [
 [[package]]
 name = "merkle-tree-rs"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "ethers",
@@ -5568,7 +5548,7 @@ dependencies = [
  "serde-big-array",
  "sha2 0.10.8",
  "sha3",
- "unsigned-varint",
+ "unsigned-varint 0.7.2",
 ]
 
 [[package]]
@@ -8250,9 +8230,9 @@ dependencies = [
 
 [[package]]
 name = "sha2raw"
-version = "11.1.0"
+version = "13.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b05310f1b1ceedfef5da1f80b6690342aec43713a79d1c303fa7b451f4e313de"
+checksum = "73744f6a373edfc5624f452ec705a762e1154bb88c6699242bf37c56d99a6ebb"
 dependencies = [
  "byteorder",
  "cpufeatures",
@@ -8502,9 +8482,9 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "storage-proofs-core"
-version = "16.1.0"
+version = "18.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "568106d9e94bd28082551873fe36e0295de24770e67cecdd25f345a1b39664f7"
+checksum = "390385ae6787ad5d4312f3b6f0462c9f6615d9a7863376f8636604e6e43f3d28"
 dependencies = [
  "aes",
  "anyhow",
@@ -8537,9 +8517,9 @@ dependencies = [
 
 [[package]]
 name = "storage-proofs-porep"
-version = "16.1.0"
+version = "18.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4d3d0dd1f03de0f4a3ea54ceed7d79c62e3c7963abe2014db0934e828514b54"
+checksum = "6dd8c6bbeb00933edb41152fdabf28d2519d6a1b6ea176a793e3198a07bb9acd"
 dependencies = [
  "anyhow",
  "bellperson",
@@ -8579,20 +8559,17 @@ dependencies = [
 
 [[package]]
 name = "storage-proofs-post"
-version = "16.1.0"
+version = "18.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4817014940a69e7e84aa459afa3d7a0b81090a312d9918089f14810e988ac24"
+checksum = "779fbfe1455a57d2a7fd655ce1b2e97bf9f238b65c71919e92aa9df8f2ced8b1"
 dependencies = [
  "anyhow",
  "bellperson",
- "blake2b_simd",
  "blstrs",
  "byteorder",
  "ff 0.13.0",
  "filecoin-hashers",
- "fr32",
  "generic-array 0.14.7",
- "hex",
  "log",
  "rayon",
  "serde",
@@ -8602,9 +8579,9 @@ dependencies = [
 
 [[package]]
 name = "storage-proofs-update"
-version = "16.1.0"
+version = "18.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5374a6a435d62e23700a08e124a8b4756ddd937fd6152289346481bfdbac21f5"
+checksum = "ee4b391917dbcffa2297295971a02cc54aa19aa8b5378d539a435e78f8050153"
 dependencies = [
  "anyhow",
  "bellperson",
@@ -9661,6 +9638,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6889a77d49f1f013504cec6bf97a2c730394adedaeb1deb5ea08949a50541105"
 
 [[package]]
+name = "unsigned-varint"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb066959b24b5196ae73cb057f45598450d2c5f71460e98c49b738086eff9c06"
+
+[[package]]
 name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9757,13 +9740,13 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vm_api"
 version = "1.0.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=139782cff4edec919d021c31400661d4cb3ff946#139782cff4edec919d021c31400661d4cb3ff946"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=20a68d0438f1fbd50b3d182b71824a043ebd4506#20a68d0438f1fbd50b3d182b71824a043ebd4506"
 dependencies = [
  "anyhow",
  "cid",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt 0.8.0",
+ "fvm_ipld_hamt",
  "fvm_shared",
  "num-derive 0.3.3",
  "num-traits",

@@ -50,15 +50,15 @@ homedir = "0.3.4"
 clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
 
-fvm_shared = "4.1.2"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d442dbe7152717191af7912da7473e4fcacf95e5"}
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d442dbe7152717191af7912da7473e4fcacf95e5"}
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="d442dbe7152717191af7912da7473e4fcacf95e5"}
-ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
-fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
-fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
-fendermint_actor_bucket = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
-fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "139782cff4edec919d021c31400661d4cb3ff946"}
+fvm_shared = "4.4.0"
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="e3d4bf54f07fa6b93d2d6993b783d7b9055e7427"}
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="e3d4bf54f07fa6b93d2d6993b783d7b9055e7427"}
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="e3d4bf54f07fa6b93d2d6993b783d7b9055e7427"}
+ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "20a68d0438f1fbd50b3d182b71824a043ebd4506"}
+fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "20a68d0438f1fbd50b3d182b71824a043ebd4506"}
+fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "20a68d0438f1fbd50b3d182b71824a043ebd4506"}
+fendermint_actor_bucket = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "20a68d0438f1fbd50b3d182b71824a043ebd4506"}
+fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "20a68d0438f1fbd50b3d182b71824a043ebd4506"}
 tendermint-rpc = { version = "0.31.1", features = [
     "secp256k1",
     "http-client",

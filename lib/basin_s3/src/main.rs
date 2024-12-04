@@ -38,7 +38,7 @@ struct Cli {
     port: u16,
 
     /// Network presets for subnet and RPC URLs.
-    #[arg(short, long, env, value_enum, default_value_t = Network::Ignition)]
+    #[arg(short, long, env, value_enum, default_value_t = Network::Testnet)]
     network: Network,
 
     /// Wallet private key (ECDSA, secp256k1) for signing transactions.
@@ -212,8 +212,6 @@ enum Network {
     Localnet,
     /// Network presets for local development.
     Devnet,
-    /// Ignition network
-    Ignition,
     /// Custom network definition
     Custom,
 }
@@ -225,7 +223,6 @@ impl Network {
             Network::Testnet => Some(SdkNetwork::Testnet),
             Network::Localnet => Some(SdkNetwork::Localnet),
             Network::Devnet => Some(SdkNetwork::Devnet),
-            Network::Ignition => Some(SdkNetwork::Ignition),
             Network::Custom => None,
         }
     }
@@ -241,16 +238,19 @@ struct NetworkDefinition {
 impl NetworkDefinition {
     fn new(cli: &Cli) -> Result<Self, anyhow::Error> {
         match cli.network.get() {
-            Some(network) => Ok(Self {
-                address_network: if network == SdkNetwork::Mainnet {
-                    address::Network::Mainnet
-                } else {
-                    address::Network::Testnet
-                },
-                rpc_url: network.rpc_url()?,
-                object_api_url: network.object_api_url()?,
-                subnet_id: network.subnet_id()?,
-            }),
+            Some(network) => {
+                let cfg = network.get_config();
+                return Ok(Self {
+                    address_network: if network == SdkNetwork::Mainnet {
+                        address::Network::Mainnet
+                    } else {
+                        address::Network::Testnet
+                    },
+                    rpc_url: cfg.rpc_url,
+                    object_api_url: cfg.object_api_url,
+                    subnet_id: cfg.subnet_id,
+                });
+            }
             None => Ok(Self {
                 address_network: address::Network::Testnet,
                 subnet_id: cli.subnet_id.clone().unwrap(),
