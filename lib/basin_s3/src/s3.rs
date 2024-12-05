@@ -48,7 +48,7 @@ static CREATION_DATE_METADATA_KEY: &str = "creation_date";
 static ETAG_METADATA_KEY: &str = "etag";
 pub static ALIAS_METADATA_KEY: &str = "alias";
 
-static MAX_LIST_OBJECTS_KEYS: u64 = 50;
+static MAX_LIST_OBJECTS_KEYS: u64 = 1000;
 
 lazy_static! {
     static ref COUNTER_S3_ACTIONS: IntCounterVec = register_int_counter_vec!(
@@ -654,21 +654,17 @@ where
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        let object = if let Some(object) = object_list.objects.into_iter().next() {
-            if let Some(object) = object.1 {
-                object
-            } else {
-                return Err(s3_error!(NoSuchKey));
-            }
+        let object_state = if let Some((_, object_state)) = object_list.objects.into_iter().next() {
+            object_state
         } else {
             return Err(s3_error!(NoSuchKey));
         };
 
-        let content_length_i64 = try_!(i64::try_from(object.size));
+        let content_length_i64 = try_!(i64::try_from(object_state.size));
 
         // TODO: detect content type
         let content_type = mime::APPLICATION_OCTET_STREAM;
-        let last_modified = object
+        let last_modified = object_state
             .metadata
             .get(LAST_MODIFIED_METADATA_KEY)
             .map(|v| Timestamp::parse(TimestampFormat::EpochSeconds, v.as_str()).unwrap());
@@ -785,10 +781,15 @@ where
             None => String::new(),
         };
 
-        let limit = input.max_keys.map_or(MAX_LIST_OBJECTS_KEYS, |v| v as u64);
+        let limit = input
+            .max_keys
+            .map_or(MAX_LIST_OBJECTS_KEYS, |v| {
+                v.try_into().unwrap_or(MAX_LIST_OBJECTS_KEYS)
+            })
+            .min(MAX_LIST_OBJECTS_KEYS);
         let start_key = input
             .continuation_token
-            .clone()
+            .as_ref()
             .map(|v| v.as_bytes().to_vec());
 
         let response = machine
@@ -806,24 +807,18 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let mut objects: Vec<Object> = Vec::new();
-        for (key, object_opt) in response.objects {
-            let object = if let Some(obj) = object_opt {
-                obj
-            } else {
-                continue;
-            };
+        for (key, object_state) in response.objects {
+            let key_str = String::from_utf8_lossy(&key);
 
-            let key_str = try_!(String::from_utf8(key));
-
-            let last_modified = object
+            let last_modified = object_state
                 .metadata
                 .get(LAST_MODIFIED_METADATA_KEY)
                 .map(|v| Timestamp::parse(TimestampFormat::EpochSeconds, v.as_str()).unwrap());
 
             objects.push(Object {
-                key: Some(key_str),
+                key: Some(key_str.to_string()),
                 last_modified,
-                size: Some(try_!(i64::try_from(object.size))),
+                size: Some(try_!(i64::try_from(object_state.size))),
                 ..Default::default()
             });
         }
@@ -837,20 +832,21 @@ where
         let key_count = try_!(i32::try_from(objects.len()));
         let next_continuation_token = response
             .next_key
-            .map(|key| std::str::from_utf8(&key).unwrap().into());
+            .map(|key| String::from_utf8_lossy(&key).into());
 
         let output = ListObjectsV2Output {
             key_count: Some(key_count),
-            max_keys: Some(try_!(MAX_LIST_OBJECTS_KEYS.try_into())),
+            max_keys: Some(
+                i32::try_from(MAX_LIST_OBJECTS_KEYS)
+                    .expect("MAX_LIST_OBJECTS_KEYS must fit into i32"),
+            ),
             contents: Some(objects),
             delimiter: input.delimiter,
             common_prefixes: Some(common_prefixes),
             encoding_type: input.encoding_type,
             name: Some(bucket.name()),
             prefix: input.prefix,
-            is_truncated: next_continuation_token
-                .as_ref()
-                .map_or(false.into(), |_| true.into()),
+            is_truncated: next_continuation_token.is_some().into(),
             continuation_token: input.continuation_token,
             next_continuation_token,
             ..Default::default()
