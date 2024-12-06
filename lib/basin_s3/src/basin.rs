@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::bucket::BucketNameWithOwner;
 use bytestring::ByteString;
-use fendermint_actor_bucket::Object;
+use fendermint_actor_bucket::ObjectState;
 use fendermint_vm_message::query::FvmQueryHeight;
 use fvm_shared::address::Address;
 use hoku_provider::json_rpc::JsonRpcProvider;
@@ -51,29 +51,29 @@ where
             .join(format!(".upload-{upload_id}.part-{part_number}.json"))
     }
 
-    pub async fn get_object(&self, machine: &Bucket, key: &ObjectKey) -> Result<Object, S3Error> {
+    pub async fn get_object(
+        &self,
+        machine: &Bucket,
+        key: &ObjectKey,
+    ) -> Result<ObjectState, S3Error> {
         let object_list = machine
             .query(
                 self.provider.deref(),
                 QueryOptions {
                     prefix: key.to_string(),
+                    start_key: Some(key.as_bytes().into()),
+                    limit: 1,
                     ..Default::default()
                 },
             )
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        let object = if let Some(object) = object_list.objects.into_iter().next() {
-            if let Some(object) = object.1 {
-                object
-            } else {
-                return Err(s3_error!(NoSuchKey));
-            }
-        } else {
-            return Err(s3_error!(NoSuchKey));
-        };
+        if let Some((_, object_state)) = object_list.objects.into_iter().next() {
+            return Ok(object_state);
+        }
 
-        Ok(object)
+        Err(s3_error!(NoSuchKey))
     }
     pub async fn get_bucket_address_by_alias(
         &self,
