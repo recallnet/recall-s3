@@ -51,14 +51,14 @@ clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
 
 fvm_shared = "4.4.0"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f"}
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f"}
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f"}
-ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f8b57ef96578af9e428052526c5452fdcfa0062"}
-fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f8b57ef96578af9e428052526c5452fdcfa0062"}
-fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f8b57ef96578af9e428052526c5452fdcfa0062"}
-fendermint_actor_bucket = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f8b57ef96578af9e428052526c5452fdcfa0062"}
-fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f8b57ef96578af9e428052526c5452fdcfa0062"}
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"}
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"}
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"}
+ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
+fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
+fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
+fendermint_actor_bucket = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
+fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
 tendermint-rpc = { version = "0.31.1", features = [
     "secp256k1",
     "http-client",

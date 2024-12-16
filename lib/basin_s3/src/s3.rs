@@ -10,7 +10,6 @@ use crate::{bucket, Basin};
 use async_tempfile::TempFile;
 use bytestring::ByteString;
 use ethers::utils::hex::ToHexExt;
-use fendermint_actor_machine::WriteAccess;
 use fendermint_vm_message::query::FvmQueryHeight;
 use futures::StreamExt;
 use futures::TryStreamExt;
@@ -386,7 +385,6 @@ where
             self.provider.deref(),
             &mut wallet,
             None,
-            WriteAccess::OnlyOwner,
             HashMap::from([
                 (
                     CREATION_DATE_METADATA_KEY.to_string(),

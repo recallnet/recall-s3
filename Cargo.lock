@@ -2808,26 +2808,25 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_blobs_shared"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "blake3",
  "data-encoding",
- "fendermint_actor_machine",
  "fil_actors_runtime",
  "frc42_dispatch",
  "fvm_ipld_encoding",
  "fvm_shared",
+ "hoku_ipld",
  "num-derive 0.3.3",
  "num-traits",
  "serde",
- "serde_tuple",
 ]
 
 [[package]]
 name = "fendermint_actor_bucket"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -2843,13 +2842,12 @@ dependencies = [
  "num-derive 0.3.3",
  "num-traits",
  "serde",
- "serde_tuple",
 ]
 
 [[package]]
 name = "fendermint_actor_eam"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -2868,9 +2866,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "fendermint_actor_hoku_config_shared"
+version = "0.1.0"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
+dependencies = [
+ "fil_actors_runtime",
+ "frc42_dispatch",
+ "fvm_ipld_encoding",
+ "fvm_shared",
+ "num-derive 0.3.3",
+ "num-traits",
+ "serde",
+]
+
+[[package]]
 name = "fendermint_actor_machine"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "fil_actor_adm",
@@ -2881,13 +2893,12 @@ dependencies = [
  "fvm_shared",
  "num-traits",
  "serde",
- "serde_tuple",
 ]
 
 [[package]]
 name = "fendermint_actor_timehub"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -2899,18 +2910,16 @@ dependencies = [
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
  "fvm_shared",
- "log",
  "num-derive 0.3.3",
  "num-traits",
  "serde",
- "serde_tuple",
  "tracing",
 ]
 
 [[package]]
 name = "fendermint_crypto"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -2922,7 +2931,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_actor_interface"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -2950,7 +2959,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "cid",
  "fnv",
@@ -2964,7 +2973,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_encoding"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "cid",
  "fvm_shared",
@@ -2977,7 +2986,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_genesis"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "fendermint_actor_eam",
@@ -2995,7 +3004,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_message"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "blake2b_simd",
@@ -3047,7 +3056,7 @@ checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 [[package]]
 name = "fil_actor_adm"
 version = "15.0.0-rc1"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -3067,7 +3076,7 @@ dependencies = [
 [[package]]
 name = "fil_actor_eam"
 version = "15.0.0-rc1"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -3088,7 +3097,7 @@ dependencies = [
 [[package]]
 name = "fil_actors_evm_shared"
 version = "15.0.0-rc1"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "fil_actors_runtime",
  "fvm_ipld_encoding",
@@ -3101,7 +3110,7 @@ dependencies = [
 [[package]]
 name = "fil_actors_runtime"
 version = "15.0.0-rc1"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -4088,9 +4097,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3688e69b38018fec1557254f64c8dc2cc8ec502890182f395dbb0aa997aa5735"
 
 [[package]]
+name = "hoku_ipld"
+version = "0.1.0"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
+dependencies = [
+ "anyhow",
+ "cid",
+ "fil_actors_runtime",
+ "fvm_ipld_blockstore",
+ "fvm_ipld_encoding",
+ "fvm_ipld_hamt",
+ "fvm_sdk",
+ "fvm_shared",
+ "integer-encoding",
+ "serde",
+]
+
+[[package]]
 name = "hoku_provider"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f#f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422#cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4121,7 +4147,7 @@ dependencies = [
 [[package]]
 name = "hoku_sdk"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f#f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422#cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -4135,6 +4161,7 @@ dependencies = [
  "ethers-contract",
  "fendermint_actor_blobs_shared",
  "fendermint_actor_bucket",
+ "fendermint_actor_hoku_config_shared",
  "fendermint_actor_machine",
  "fendermint_actor_timehub",
  "fendermint_crypto",
@@ -4166,7 +4193,7 @@ dependencies = [
 [[package]]
 name = "hoku_signer"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f#f4fe9e1fc759a73fb1fbf595a5e741328e79ac7f"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422#cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4778,7 +4805,7 @@ dependencies = [
 [[package]]
 name = "ipc-api"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -4793,6 +4820,7 @@ dependencies = [
  "ipc_actors_abis",
  "lazy_static",
  "log",
+ "merkle-tree-rs",
  "num-traits",
  "num_enum",
  "serde",
@@ -4806,7 +4834,7 @@ dependencies = [
 [[package]]
 name = "ipc-types"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
@@ -4830,7 +4858,7 @@ dependencies = [
 [[package]]
 name = "ipc_actors_abis"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "ethers",
@@ -5607,7 +5635,7 @@ dependencies = [
 [[package]]
 name = "merkle-tree-rs"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "ethers",
@@ -9954,7 +9982,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vm_api"
 version = "1.0.0"
-source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f8b57ef96578af9e428052526c5452fdcfa0062#6f8b57ef96578af9e428052526c5452fdcfa0062"
+source = "git+ssh://git@github.com/hokunet/ipc.git?rev=6f04e8c17e290b38519ee6688bc1c8b9a0e43527#6f04e8c17e290b38519ee6688bc1c8b9a0e43527"
 dependencies = [
  "anyhow",
  "cid",
