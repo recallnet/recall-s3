@@ -40,7 +40,10 @@ tokio = { version = "1.41.0", features = ["fs", "io-util"] }
 tokio-util = { version = "0.7.12", features = ["io"] }
 tracing = "0.1.40"
 tracing-error = "0.2.0"
-tracing-subscriber = { version = "0.3.18", optional = true, features = ["env-filter", "time"] }
+tracing-subscriber = { version = "0.3.18", optional = true, features = [
+    "env-filter",
+    "time",
+] }
 uuid = { version = "1.11.0", features = ["v4"] }
 anyhow = "1.0.91"
 bytestring = "1.3.1"
@@ -49,21 +52,9 @@ tempfile = "3.13.0"
 homedir = "0.3.4"
 clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
-
-fvm_shared = "4.4.0"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"}
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"}
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="cbd95ee42699436cbf3c4ef5b1ba6c3bbef27422"}
-ipc-api = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
-fendermint_vm_message = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
-fendermint_actor_machine = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
-fendermint_actor_bucket = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
-fendermint_crypto = { git = "ssh://git@github.com/hokunet/ipc.git", rev = "6f04e8c17e290b38519ee6688bc1c8b9a0e43527"}
-tendermint-rpc = { version = "0.31.1", features = [
-    "secp256k1",
-    "http-client",
-    "websocket-client",
-] }
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="a26f059fecdfe434f55d93564bf9ea122f6c34d3"}
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="a26f059fecdfe434f55d93564bf9ea122f6c34d3"}
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev ="a26f059fecdfe434f55d93564bf9ea122f6c34d3"}
 prometheus = { version = "0.13", features = ["process"] }
 prometheus_exporter = "0.8"
 lazy_static = "1.5"

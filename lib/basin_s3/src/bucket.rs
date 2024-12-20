@@ -1,6 +1,5 @@
 use bytestring::ByteString;
-use fvm_shared::address::Address;
-use ipc_api::ethers_address_to_fil_address;
+use hoku_provider::{fvm_shared::address::Address, util::ethers_address_to_fil_address};
 use s3s::dto::BucketName;
 use s3s::{s3_error, S3Error, S3ErrorCode};
 use std::str::FromStr;
