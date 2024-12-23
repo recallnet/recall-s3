@@ -4,16 +4,14 @@ use std::sync::Arc;
 
 use crate::bucket::BucketNameWithOwner;
 use bytestring::ByteString;
-use fendermint_actor_bucket::ObjectState;
-use fendermint_vm_message::query::FvmQueryHeight;
-use fvm_shared::address::Address;
-use hoku_provider::json_rpc::JsonRpcProvider;
-use hoku_sdk::machine::bucket::{Bucket, QueryOptions};
+use hoku_provider::{
+    fvm_shared::address::Address, json_rpc::JsonRpcProvider, query::FvmQueryHeight, Client,
+};
+use hoku_sdk::machine::bucket::{Bucket, ObjectState, QueryOptions};
 use hoku_sdk::machine::Machine;
 use hoku_signer::{Signer, Void};
 use s3s::dto::{ObjectKey, PartNumber};
 use s3s::{s3_error, S3Error, S3ErrorCode};
-use tendermint_rpc::Client;
 use uuid::Uuid;
 
 pub struct Basin<C: Client + Send + Sync, S: Signer> {
