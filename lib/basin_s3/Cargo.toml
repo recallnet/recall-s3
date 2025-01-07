@@ -52,9 +52,9 @@ tempfile = "3.13.0"
 homedir = "0.3.4"
 clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
-hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev = "5a6e8ceb5c129a3778decc1ad6b5f23e12f40bf4" }
-hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev = "5a6e8ceb5c129a3778decc1ad6b5f23e12f40bf4" }
-hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev = "5a6e8ceb5c129a3778decc1ad6b5f23e12f40bf4" }
+hoku_sdk = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev = "965b37569829f64b09954f0c868879dd2a705743" }
+hoku_provider = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev = "965b37569829f64b09954f0c868879dd2a705743" }
+hoku_signer = { git = "ssh://git@github.com/hokunet/rust-hoku.git", rev = "965b37569829f64b09954f0c868879dd2a705743" }
 prometheus = { version = "0.13", features = ["process"] }
 prometheus_exporter = "0.8"
 lazy_static = "1.5"
