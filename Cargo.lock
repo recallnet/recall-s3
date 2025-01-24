@@ -4170,7 +4170,7 @@ dependencies = [
 [[package]]
 name = "hoku_provider"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=710ccd6b2ebad0734b76f781a3c434188d8b4bb7#710ccd6b2ebad0734b76f781a3c434188d8b4bb7"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=13ef4cc3afa3d3b5f2cbab74e9d041a016cfb2d6#13ef4cc3afa3d3b5f2cbab74e9d041a016cfb2d6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4200,7 +4200,7 @@ dependencies = [
 [[package]]
 name = "hoku_sdk"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=710ccd6b2ebad0734b76f781a3c434188d8b4bb7#710ccd6b2ebad0734b76f781a3c434188d8b4bb7"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=13ef4cc3afa3d3b5f2cbab74e9d041a016cfb2d6#13ef4cc3afa3d3b5f2cbab74e9d041a016cfb2d6"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -4241,7 +4241,7 @@ dependencies = [
 [[package]]
 name = "hoku_signer"
 version = "0.1.0"
-source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=710ccd6b2ebad0734b76f781a3c434188d8b4bb7#710ccd6b2ebad0734b76f781a3c434188d8b4bb7"
+source = "git+ssh://git@github.com/hokunet/rust-hoku.git?rev=13ef4cc3afa3d3b5f2cbab74e9d041a016cfb2d6#13ef4cc3afa3d3b5f2cbab74e9d041a016cfb2d6"
 dependencies = [
  "anyhow",
  "async-trait",
