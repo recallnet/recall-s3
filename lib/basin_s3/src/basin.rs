@@ -4,12 +4,12 @@ use std::sync::Arc;
 
 use crate::bucket::BucketNameWithOwner;
 use bytestring::ByteString;
-use hoku_provider::{
+use recall_provider::{
     fvm_shared::address::Address, json_rpc::JsonRpcProvider, query::FvmQueryHeight, Client,
 };
-use hoku_sdk::machine::bucket::{Bucket, ObjectState, QueryOptions};
-use hoku_sdk::machine::Machine;
-use hoku_signer::{Signer, Void};
+use recall_sdk::machine::bucket::{Bucket, ObjectState, QueryOptions};
+use recall_sdk::machine::Machine;
+use recall_signer::{Signer, Void};
 use s3s::dto::{ObjectKey, PartNumber};
 use s3s::{s3_error, S3Error, S3ErrorCode};
 use uuid::Uuid;

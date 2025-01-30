@@ -8,12 +8,12 @@ use anyhow::Context;
 use basin_s3::Basin;
 use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
-use hoku_provider::{
+use recall_provider::{
     fvm_shared::address,
     json_rpc::{JsonRpcProvider, Url},
 };
-use hoku_sdk::network::Network as SdkNetwork;
-use hoku_signer::{
+use recall_sdk::network::Network as SdkNetwork;
+use recall_signer::{
     key::{parse_secret_key, SecretKey},
     AccountKind, SubnetID, Wallet,
 };
