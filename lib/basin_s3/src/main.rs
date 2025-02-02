@@ -8,6 +8,9 @@ use anyhow::Context;
 use basin_s3::Basin;
 use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
+use homedir::my_home;
+use hyper_util::rt::{TokioExecutor, TokioIo};
+use hyper_util::server::conn::auto::Builder as ConnBuilder;
 use recall_provider::{
     fvm_shared::address,
     json_rpc::{JsonRpcProvider, Url},
@@ -17,9 +20,6 @@ use recall_signer::{
     key::{parse_secret_key, SecretKey},
     AccountKind, SubnetID, Wallet,
 };
-use homedir::my_home;
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use hyper_util::server::conn::auto::Builder as ConnBuilder;
 use s3s::auth::SimpleAuth;
 use s3s::service::S3ServiceBuilder;
 use tokio::net::TcpListener;
