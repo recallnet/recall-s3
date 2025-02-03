@@ -468,7 +468,7 @@ where
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        debug!(hash = ?tx.hash, status = ?tx.status);
+        debug!(hash = ?tx.hash(), status = ?tx.status);
 
         action_counter.success = true;
         let output = DeleteObjectOutput::default(); // TODO: handle other fields
@@ -511,7 +511,7 @@ where
                 .await
                 .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-            debug!(hash = ?tx.hash, status = ?tx.status);
+            debug!(hash = ?tx.hash(), status = ?tx.status);
         }
 
         action_counter.success = true;
