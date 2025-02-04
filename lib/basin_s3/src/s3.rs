@@ -304,10 +304,11 @@ where
                 "no etag".to_string(),
             ))))?;
 
-        let total_size = file.seek(std::io::SeekFrom::End(0))
+        let total_size = file
+            .seek(std::io::SeekFrom::End(0))
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
-        
+
         let _ = machine
             .add_reader(
                 self.provider.deref(),
