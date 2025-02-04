@@ -113,8 +113,12 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
     address::set_current_network(network_def.address_network);
 
     // Setup network provider
-    let provider =
-        JsonRpcProvider::new_http(network_def.rpc_url, network_def.subnet_id.chain_id(), None, Some(network_def.object_api_url))?;
+    let provider = JsonRpcProvider::new_http(
+        network_def.rpc_url,
+        network_def.subnet_id.chain_id(),
+        None,
+        Some(network_def.object_api_url),
+    )?;
 
     let root = my_home()?.unwrap().join(".s3-basin");
     std::fs::create_dir_all(&root)?;
