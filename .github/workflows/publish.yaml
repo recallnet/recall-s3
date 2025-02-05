@@ -6,6 +6,10 @@ on:
       - main
   pull_request:
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+
 jobs:
   publish:
     name: Publish
@@ -16,7 +20,7 @@ jobs:
         ssh-private-key: |
           ${{ secrets.IPC_DEPLOY_KEY }}
           ${{ secrets.BUILTIN_ACTORS_DEPLOY_KEY }}
-          ${{ secrets.RUST_HOKU_DEPLOY_KEY }}
+          ${{ secrets.RUST_RECALL_DEPLOY_KEY }}
           ${{ secrets.CONTRACTS_DEPLOY_KEY }}
 
     - name: Checkout source code

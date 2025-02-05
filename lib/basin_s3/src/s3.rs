@@ -12,20 +12,20 @@ use bytestring::ByteString;
 use ethers::utils::hex::ToHexExt;
 use futures::StreamExt;
 use futures::TryStreamExt;
-use hoku_provider::util::payload_to_evm_address;
-use hoku_provider::Client;
-use hoku_provider::{message::GasParams, query::FvmQueryHeight};
-use hoku_sdk::machine::bucket::AddOptions;
-use hoku_sdk::machine::bucket::Bucket;
-use hoku_sdk::machine::bucket::DeleteOptions;
-use hoku_sdk::machine::bucket::GetOptions;
-use hoku_sdk::machine::bucket::QueryOptions;
-use hoku_sdk::machine::Machine;
-use hoku_signer::Signer;
 use lazy_static::lazy_static;
 use md5::Digest;
 use md5::Md5;
 use prometheus::{register_int_counter_vec, IntCounterVec};
+use recall_provider::util::payload_to_evm_address;
+use recall_provider::Client;
+use recall_provider::{message::GasParams, query::FvmQueryHeight};
+use recall_sdk::machine::bucket::AddOptions;
+use recall_sdk::machine::bucket::Bucket;
+use recall_sdk::machine::bucket::DeleteOptions;
+use recall_sdk::machine::bucket::GetOptions;
+use recall_sdk::machine::bucket::QueryOptions;
+use recall_sdk::machine::Machine;
+use recall_signer::Signer;
 use s3s::dto::*;
 use s3s::s3_error;
 use s3s::S3Error;
@@ -304,12 +304,18 @@ where
                 "no etag".to_string(),
             ))))?;
 
+        let total_size = file
+            .seek(std::io::SeekFrom::End(0))
+            .await
+            .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
+
         let _ = machine
             .add_reader(
                 self.provider.deref(),
                 &mut wallet,
                 &dst_key,
                 file,
+                total_size,
                 AddOptions {
                     metadata: HashMap::from([
                         (
@@ -468,7 +474,7 @@ where
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        debug!(hash = ?tx.hash, status = ?tx.status);
+        debug!(hash = ?tx.hash(), status = ?tx.status);
 
         action_counter.success = true;
         let output = DeleteObjectOutput::default(); // TODO: handle other fields
@@ -511,7 +517,7 @@ where
                 .await
                 .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-            debug!(hash = ?tx.hash, status = ?tx.status);
+            debug!(hash = ?tx.hash(), status = ?tx.status);
         }
 
         action_counter.success = true;
