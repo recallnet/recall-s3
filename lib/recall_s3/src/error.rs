@@ -51,7 +51,7 @@ pub(crate) fn log(source: &dyn std::error::Error) {
         let span_trace = tracing_error::SpanTrace::capture();
 
         error!(
-            target: "basin_s3_internal_error",
+            target: "recall_s3_internal_error",
             %location,
             error=%source,
             "span trace:\n{span_trace}"

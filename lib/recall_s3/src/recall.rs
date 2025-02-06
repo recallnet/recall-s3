@@ -14,14 +14,14 @@ use s3s::dto::{ObjectKey, PartNumber};
 use s3s::{s3_error, S3Error, S3ErrorCode};
 use uuid::Uuid;
 
-pub struct Basin<C: Client + Send + Sync, S: Signer> {
+pub struct Recall<C: Client + Send + Sync, S: Signer> {
     pub root: PathBuf,
     pub provider: Arc<JsonRpcProvider<C>>,
     pub wallet: Option<S>,
     pub is_read_only: bool,
 }
 
-impl<C, S> Basin<C, S>
+impl<C, S> Recall<C, S>
 where
     C: Client + Send + Sync,
     S: Signer,

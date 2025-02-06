@@ -15,11 +15,11 @@ use aws_sdk_s3::types::CompletedMultipartUpload;
 use aws_sdk_s3::types::CompletedPart;
 use aws_sdk_s3::types::CreateBucketConfiguration;
 use aws_sdk_s3::Client;
-use basin_s3::Basin;
 use ethers::utils::hex::ToHexExt;
 use ipc_api::evm::payload_to_evm_address;
 use once_cell::sync::Lazy;
 use recall_provider::json_rpc::JsonRpcProvider;
+use recall_s3::Recall;
 use recall_sdk::network::Network;
 use recall_signer::key::parse_secret_key;
 use recall_signer::AccountKind;
@@ -91,7 +91,7 @@ async fn config() -> &'static SdkConfigWithAddress {
         )
         .unwrap();
 
-        let basin = Basin::new(
+        let recall = Recall::new(
             tempdir().unwrap().into_path(),
             provider,
             Some(WALLET.get().unwrap().clone()),
@@ -100,7 +100,7 @@ async fn config() -> &'static SdkConfigWithAddress {
 
         // Setup S3 service
         let service = {
-            let mut b = S3ServiceBuilder::new(basin);
+            let mut b = S3ServiceBuilder::new(recall);
             b.set_auth(SimpleAuth::from_single(
                 cred.access_key_id(),
                 cred.secret_access_key(),

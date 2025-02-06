@@ -11,13 +11,13 @@ clippy::module_name_repetitions,
 clippy::multiple_crate_versions, // TODO: check later
 )]
 
-pub use self::basin::Basin;
 pub use self::error::*;
+pub use self::recall::Recall;
 
 #[macro_use]
 mod error;
 
-mod basin;
 mod bucket;
+mod recall;
 mod s3;
 mod utils;

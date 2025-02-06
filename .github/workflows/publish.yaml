@@ -53,5 +53,5 @@ jobs:
         ssh: default=${{ env.SSH_AUTH_SOCK }}
         file: ./ci.Dockerfile
         push: ${{ github.ref == 'refs/heads/main' }}
-        tags: textilemachine/basin-s3:latest,textilemachine/basin-s3:${{ steps.prep.outputs.VERSION }}
+        tags: textilemachine/recall-s3:latest,textilemachine/recall-s3:${{ steps.prep.outputs.VERSION }}
         platforms: linux/amd64,linux/arm64

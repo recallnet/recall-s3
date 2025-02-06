@@ -58,13 +58,13 @@ RUN \
   esac; \
   rustup show ; \
   cargo build --features binary --release --locked --target ${ARCH}-unknown-linux-gnu; \
-  mv ./target/${ARCH}-unknown-linux-gnu/release/basin_s3 ./
+  mv ./target/${ARCH}-unknown-linux-gnu/release/recall_s3 ./
 
 FROM debian:bookworm-slim
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
-COPY --from=builder /app/basin_s3 .
+COPY --from=builder /app/recall_s3 .
 
 EXPOSE 8014
 
-CMD ["./basin_s3"]
+CMD ["./recall_s3"]

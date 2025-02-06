@@ -1,14 +1,14 @@
 [workspace]
-members = ["lib/basin_s3"]
+members = ["lib/recall_s3"]
 resolver = "2"
 
 [workspace.package]
 authors = ["Textile <contact@textile.io"]
 description = "An S3 adapter for Textile IPC Object Storage."
 edition = "2021"
-homepage = "https://github.com/recallnet/basin-s3/"
+homepage = "https://github.com/recallnet/recall-s3/"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
-repository = "https://github.com/recallnet/basin-s3/"
+repository = "https://github.com/recallnet/recall-s3/"
 keywords = ["s3", "ipc", "filecoin", "tableland"]
 version = "0.1.0"

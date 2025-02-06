@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::bucket::BucketNameWithOwner;
 use crate::utils::hex;
 use crate::utils::{copy_bytes, HashReader};
-use crate::{bucket, Basin};
+use crate::{bucket, Recall};
 
 use async_tempfile::TempFile;
 use bytestring::ByteString;
@@ -50,7 +50,7 @@ static MAX_LIST_OBJECTS_KEYS: u64 = 1000;
 
 lazy_static! {
     static ref COUNTER_S3_ACTIONS: IntCounterVec = register_int_counter_vec!(
-        "basin_s3_call",
+        "recall_s3_call",
         "Number of S3 calls.",
         &["action", "status"]
     )
@@ -81,7 +81,7 @@ impl Drop for S3ActionCounter {
 }
 
 #[async_trait::async_trait]
-impl<C, S> S3 for Basin<C, S>
+impl<C, S> S3 for Recall<C, S>
 where
     C: Client + Send + Sync + 'static,
     S: Signer + 'static,
