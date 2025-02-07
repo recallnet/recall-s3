@@ -17,7 +17,7 @@ ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
 WORKDIR /app
 
 # Update the version here if our `rust-toolchain.toml` would cause something new to be fetched every time.
-ARG RUST_VERSION=1.82.0
+ARG RUST_VERSION=1.84.0
 RUN \
   rustup install ${RUST_VERSION} && \
   rustup default ${RUST_VERSION} && \
@@ -58,13 +58,13 @@ RUN \
   esac; \
   rustup show ; \
   cargo build --features binary --release --locked --target ${ARCH}-unknown-linux-gnu; \
-  mv ./target/${ARCH}-unknown-linux-gnu/release/basin_s3 ./
+  mv ./target/${ARCH}-unknown-linux-gnu/release/recall_s3 ./
 
 FROM debian:bookworm-slim
 
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs
-COPY --from=builder /app/basin_s3 .
+COPY --from=builder /app/recall_s3 .
 
 EXPOSE 8014
 
-CMD ["./basin_s3"]
+CMD ["./recall_s3"]

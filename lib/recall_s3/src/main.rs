@@ -5,7 +5,6 @@ use std::io::IsTerminal;
 use std::net::SocketAddr;
 
 use anyhow::Context;
-use basin_s3::Basin;
 use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::Verbosity;
 use homedir::my_home;
@@ -15,6 +14,7 @@ use recall_provider::{
     fvm_shared::address,
     json_rpc::{JsonRpcProvider, Url},
 };
+use recall_s3::Recall;
 use recall_sdk::network::Network as SdkNetwork;
 use recall_signer::{
     key::{parse_secret_key, SecretKey},
@@ -120,23 +120,23 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         Some(network_def.object_api_url),
     )?;
 
-    let root = my_home()?.unwrap().join(".s3-basin");
+    let root = my_home()?.unwrap().join(".s3-recall");
     std::fs::create_dir_all(&root)?;
 
-    let basin = match cli.private_key {
+    let recall = match cli.private_key {
         Some(sk) => {
             // Setup local wallet using private key from arg
             let mut wallet =
                 Wallet::new_secp256k1(sk, AccountKind::Ethereum, network_def.subnet_id)?;
             wallet.init_sequence(&provider).await?;
-            Basin::new(root, provider, Some(wallet))?
+            Recall::new(root, provider, Some(wallet))?
         }
-        None => Basin::new(root, provider, None)?,
+        None => Recall::new(root, provider, None)?,
     };
 
     // Setup S3 service
     let service = {
-        let mut b = S3ServiceBuilder::new(basin);
+        let mut b = S3ServiceBuilder::new(recall);
 
         // Enable authentication
         if let (Some(ak), Some(sk)) = (cli.access_key, cli.secret_key) {
