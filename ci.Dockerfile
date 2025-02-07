@@ -17,7 +17,7 @@ ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
 WORKDIR /app
 
 # Update the version here if our `rust-toolchain.toml` would cause something new to be fetched every time.
-ARG RUST_VERSION=1.82.0
+ARG RUST_VERSION=1.84.0
 RUN \
   rustup install ${RUST_VERSION} && \
   rustup default ${RUST_VERSION} && \
