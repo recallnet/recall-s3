@@ -4,6 +4,7 @@ use s3s::dto::BucketName;
 use s3s::{s3_error, S3Error, S3ErrorCode};
 use std::str::FromStr;
 
+#[derive(Debug)]
 pub struct BucketNameWithOwner {
     name: String,
     owner: Address,
@@ -36,6 +37,19 @@ impl BucketNameWithOwner {
     pub fn name(&self) -> String {
         self.name.clone()
     }
+}
+
+pub fn split_eth_address(name: &str) -> Option<(String, String)> {
+    let parts = name.split(".").collect::<Vec<_>>();
+    if parts.len() == 1 {
+        return None;
+    }
+    if ethers::types::Address::from_str(parts[0]).is_err() {
+        return None;
+    };
+
+    let tail = &parts[1..];
+    Some((parts[0].to_string(), tail.join("")))
 }
 
 pub fn check_bucket_name(name: &str) -> bool {

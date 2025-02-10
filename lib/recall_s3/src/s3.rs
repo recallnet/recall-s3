@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::ops::{Deref, Not};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::bucket::BucketNameWithOwner;
+use crate::bucket::{split_eth_address, BucketNameWithOwner};
 use crate::utils::hex;
 use crate::utils::{copy_bytes, HashReader};
-use crate::{bucket, Recall};
+use crate::Recall;
 
 use async_tempfile::TempFile;
 use bytestring::ByteString;
@@ -16,7 +16,6 @@ use lazy_static::lazy_static;
 use md5::Digest;
 use md5::Md5;
 use prometheus::{register_int_counter_vec, IntCounterVec};
-use recall_provider::util::payload_to_evm_address;
 use recall_provider::Client;
 use recall_provider::{message::GasParams, query::FvmQueryHeight};
 use recall_sdk::machine::bucket::AddOptions;
@@ -146,7 +145,7 @@ where
             ..
         } = req.input;
 
-        let bucket = BucketNameWithOwner::from(bucket)?;
+        let bucket = self.get_bucket_path(&bucket)?;
 
         let Some(multipart_upload) = multipart_upload else {
             return Err(s3_error!(InvalidPart));
@@ -237,13 +236,10 @@ where
                 ref bucket,
                 ref key,
                 ..
-            } => (
-                BucketNameWithOwner::from(bucket.to_string())?,
-                key.to_string(),
-            ),
+            } => (self.get_bucket_path(&bucket.to_string())?, key.to_string()),
         };
 
-        let (dst_bucket, dst_key) = (BucketNameWithOwner::from(input.bucket)?, input.key);
+        let (dst_bucket, dst_key) = (self.get_bucket_path(&input.bucket)?, input.key);
 
         // Download object to a file
         let Some(src_address) = self.get_bucket_address_by_alias(&src_bucket).await? else {
@@ -361,24 +357,28 @@ where
             ));
         }
 
-        let bucket = req.input.bucket;
-        if !bucket::check_bucket_name(bucket.as_str()) {
-            return Err(s3_error!(InvalidBucketName));
-        }
-
         let mut wallet = match &self.wallet {
             Some(w) => w.clone(),
             None => unreachable!(),
         };
 
-        let eth_address = payload_to_evm_address(wallet.address().payload())
-            .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
+        let eth_address = wallet.eth_address().expect("eth address must exist");
+        let bucket = if let Some((addr, bucket_name)) = split_eth_address(&req.input.bucket) {
+            if !eth_address
+                .encode_hex_with_prefix()
+                .eq_ignore_ascii_case(&addr)
+            {
+                return Err(s3_error!(InvalidBucketName));
+            }
 
-        let bucket = BucketNameWithOwner::from(format!(
-            "{}.{}",
-            eth_address.encode_hex_with_prefix(),
-            bucket
-        ))?;
+            BucketNameWithOwner::from(format!("{}.{}", addr, bucket_name))?
+        } else {
+            BucketNameWithOwner::from(format!(
+                "{}.{}",
+                eth_address.encode_hex_with_prefix(),
+                &req.input.bucket
+            ))?
+        };
 
         if self.get_bucket_address_by_alias(&bucket).await?.is_some() {
             return Err(s3_error!(BucketAlreadyExists));
@@ -450,12 +450,11 @@ where
             ));
         }
 
-        let bucket = BucketNameWithOwner::from(req.input.bucket)?;
-        let key = req.input.key;
-
+        let bucket = self.get_bucket_path(&req.input.bucket)?;
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
         };
+
         let machine = Bucket::attach(address)
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
@@ -464,6 +463,8 @@ where
             Some(w) => w.clone(),
             None => unreachable!(),
         };
+
+        let key = req.input.key;
         let tx = machine
             .delete(
                 self.provider.deref(),
@@ -494,7 +495,7 @@ where
             ));
         }
 
-        let bucket = BucketNameWithOwner::from(req.input.bucket)?;
+        let bucket = self.get_bucket_path(&req.input.bucket)?;
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
         };
@@ -526,13 +527,24 @@ where
     }
 
     //#[tracing::instrument]
+    async fn get_bucket_location(
+        &self,
+        _req: S3Request<GetBucketLocationInput>,
+    ) -> S3Result<S3Response<GetBucketLocationOutput>> {
+        let mut action_counter = S3ActionCounter::new("get_bucket_location");
+        let output = GetBucketLocationOutput::default();
+        action_counter.success = true;
+        Ok(S3Response::new(output))
+    }
+
+    //#[tracing::instrument]
     async fn get_object(
         &self,
         req: S3Request<GetObjectInput>,
     ) -> S3Result<S3Response<GetObjectOutput>> {
         let mut action_counter = S3ActionCounter::new("get_object");
         let input = req.input;
-        let bucket = BucketNameWithOwner::from(input.bucket)?;
+        let bucket = self.get_bucket_path(&input.bucket)?;
 
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
@@ -617,7 +629,7 @@ where
     ) -> S3Result<S3Response<HeadBucketOutput>> {
         let mut action_counter = S3ActionCounter::new("head_bucket");
         let input = req.input;
-        let bucket = BucketNameWithOwner::from(input.bucket)?;
+        let bucket = self.get_bucket_path(&input.bucket)?;
 
         let Some(_) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
@@ -636,7 +648,7 @@ where
     ) -> S3Result<S3Response<HeadObjectOutput>> {
         let mut action_counter = S3ActionCounter::new("head_object");
         let input = req.input;
-        let bucket = BucketNameWithOwner::from(input.bucket)?;
+        let bucket = self.get_bucket_path(&input.bucket)?;
 
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
@@ -764,7 +776,7 @@ where
     ) -> S3Result<S3Response<ListObjectsV2Output>> {
         let mut action_counter = S3ActionCounter::new("list_objects_v2");
         let input: ListObjectsV2Input = req.input;
-        let bucket = BucketNameWithOwner::from(input.bucket)?;
+        let bucket = self.get_bucket_path(&input.bucket)?;
 
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
@@ -878,7 +890,7 @@ where
             body, bucket, key, ..
         } = input;
 
-        let bucket = BucketNameWithOwner::from(bucket)?;
+        let bucket = self.get_bucket_path(&bucket)?;
 
         let Some(address) = self.get_bucket_address_by_alias(&bucket).await? else {
             return Err(s3_error!(NoSuchBucket));
@@ -985,17 +997,6 @@ where
             e_tag: Some(format!("\"{md5_sum}\"")),
             ..Default::default()
         };
-        action_counter.success = true;
-        Ok(S3Response::new(output))
-    }
-
-    //#[tracing::instrument]
-    async fn get_bucket_location(
-        &self,
-        _req: S3Request<GetBucketLocationInput>,
-    ) -> S3Result<S3Response<GetBucketLocationOutput>> {
-        let mut action_counter = S3ActionCounter::new("get_bucket_location");
-        let output = GetBucketLocationOutput::default();
         action_counter.success = true;
         Ok(S3Response::new(output))
     }
