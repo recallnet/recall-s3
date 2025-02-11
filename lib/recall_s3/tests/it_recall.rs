@@ -16,7 +16,6 @@ use aws_sdk_s3::types::CompletedPart;
 use aws_sdk_s3::types::CreateBucketConfiguration;
 use aws_sdk_s3::Client;
 use ethers::utils::hex::ToHexExt;
-use ipc_api::evm::payload_to_evm_address;
 use once_cell::sync::Lazy;
 use recall_provider::json_rpc::JsonRpcProvider;
 use recall_s3::Recall;
@@ -55,17 +54,18 @@ fn setup_tracing() {
 async fn get_wallet() -> Wallet {
     let sk = parse_secret_key(env::var("PRIVATE_KEY").unwrap().as_str()).unwrap();
 
-    let network = Network::Localnet;
+    let network = Network::Devnet;
     network.init();
     let provider = JsonRpcProvider::new_http(
-        network.rpc_url().unwrap(),
+        network.get_config().rpc_url,
+        network.get_config().subnet_id.chain_id(),
         None,
-        Some(network.object_api_url().unwrap()),
+        Some(network.get_config().object_api_url),
     )
     .unwrap();
 
     let mut wallet =
-        Wallet::new_secp256k1(sk, AccountKind::Ethereum, network.subnet_id().unwrap()).unwrap();
+        Wallet::new_secp256k1(sk, AccountKind::Ethereum, network.get_config().subnet_id).unwrap();
     wallet.init_sequence(&provider).await.unwrap();
     wallet
 }
@@ -85,9 +85,10 @@ async fn config() -> &'static SdkConfigWithAddress {
         network.init();
         // Setup network provider
         let provider = JsonRpcProvider::new_http(
-            network.rpc_url().unwrap(),
+            network.get_config().rpc_url,
+            network.get_config().subnet_id.chain_id(),
             None,
-            Some(network.object_api_url().unwrap()),
+            Some(network.get_config().object_api_url),
         )
         .unwrap();
 
@@ -120,8 +121,7 @@ async fn config() -> &'static SdkConfigWithAddress {
             .endpoint_url(format!("http://{DOMAIN_NAME}"))
             .build();
 
-        let eth_address =
-            payload_to_evm_address(WALLET.get().unwrap().clone().address().payload()).unwrap();
+        let eth_address = WALLET.get().unwrap().clone().eth_address().unwrap();
 
         SdkConfigWithAddress {
             sdk: config,
@@ -230,7 +230,7 @@ async fn test_list_objects_v2() -> Result<()> {
     let bucket = "test-list-objects";
     let bucket_with_owner = format!("{}.{}", &config.address, bucket);
 
-    //create_bucket(&c, bucket).await?;
+    create_bucket(&c, bucket).await?;
 
     let test_prefix = "this/is/a/test/path/";
     let key1 = "this/is/a/test/path/file1.txt";
