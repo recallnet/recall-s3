@@ -102,18 +102,15 @@ where
         let eth_address = self
             .wallet
             .as_ref()
-            .map(|wallet| wallet.eth_address().expect("wallet must has eth address"));
+            .map(|wallet| wallet.eth_address().expect("wallet must have eth address"));
         match split_eth_address(bucket) {
-            Some((addr, bucket_name)) => {
-                BucketNameWithOwner::from(format!("{}.{}", addr, bucket_name))
-            }
+            Some((addr, bucket_name)) => BucketNameWithOwner::from(&addr, &bucket_name),
             None => {
                 if let Some(eth_address) = eth_address {
-                    return BucketNameWithOwner::from(format!(
-                        "{}.{}",
-                        eth_address.encode_hex_with_prefix(),
-                        bucket
-                    ));
+                    return BucketNameWithOwner::from(
+                        &eth_address.encode_hex_with_prefix(),
+                        bucket,
+                    );
                 }
 
                 Err(S3Error::new(S3ErrorCode::Custom(ByteString::from(

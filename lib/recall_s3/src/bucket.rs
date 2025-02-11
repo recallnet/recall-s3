@@ -11,23 +11,19 @@ pub struct BucketNameWithOwner {
 }
 
 impl BucketNameWithOwner {
-    pub fn from(bucket_name: BucketName) -> Result<Self, S3Error> {
-        let parts = bucket_name.split(".").collect::<Vec<&str>>();
-
-        if parts.len() <= 1 {
-            return Err(s3_error!(InvalidBucketName));
-        }
-
-        let addr = ethers::types::Address::from_str(parts[0])
+    pub fn from(owner: &str, bucket_name: &BucketName) -> Result<Self, S3Error> {
+        let addr = ethers::types::Address::from_str(owner)
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
         let owner = ethers_address_to_fil_address(&addr)
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        let name = parts[1..].join(".");
-        if !check_bucket_name(name.as_str()) {
+        if !check_bucket_name(bucket_name) {
             return Err(s3_error!(InvalidBucketName));
         }
-        Ok(Self { name, owner })
+        Ok(Self {
+            name: bucket_name.to_string(),
+            owner,
+        })
     }
 
     pub fn owner(&self) -> Address {
@@ -94,17 +90,22 @@ mod tests {
     #[test]
     fn test_bucket_name_with_owner() {
         let bucket = BucketNameWithOwner::from(
-            "0xe1209fb9aa2d08c8541297ec06ee6bbb63b10edc.foo.bar".to_string(),
+            "0xe1209fb9aa2d08c8541297ec06ee6bbb63b10edc",
+            &"foo.bar".to_string(),
         )
         .unwrap();
         assert_eq!("foo.bar", bucket.name());
 
-        let res =
-            BucketNameWithOwner::from("0xe1209fb9aa2d08c8541297ec06ee6bbb63b10edc".to_string());
+        let res = BucketNameWithOwner::from(
+            "0xe1209fb9aa2d08c8541297ec06ee6bbb63b10edc",
+            &"(INVALID_NAME)".to_string(),
+        );
         assert!(res.is_err());
 
-        let res =
-            BucketNameWithOwner::from("0xe1209fb9aa2d08c8541297ec06ee6bbb63b10edc.".to_string());
+        let res = BucketNameWithOwner::from(
+            "0xe1209fb9aa2d08c8541297ec06ee6bbb63b10edc.",
+            &"foo".to_string(),
+        );
         assert!(res.is_err());
     }
 }

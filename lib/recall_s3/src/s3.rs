@@ -371,13 +371,9 @@ where
                 return Err(s3_error!(InvalidBucketName));
             }
 
-            BucketNameWithOwner::from(format!("{}.{}", addr, bucket_name))?
+            BucketNameWithOwner::from(&addr, &bucket_name)?
         } else {
-            BucketNameWithOwner::from(format!(
-                "{}.{}",
-                eth_address.encode_hex_with_prefix(),
-                &req.input.bucket
-            ))?
+            BucketNameWithOwner::from(&eth_address.encode_hex_with_prefix(), &req.input.bucket)?
         };
 
         if self.get_bucket_address_by_alias(&bucket).await?.is_some() {
