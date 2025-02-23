@@ -9,7 +9,7 @@ readme = { workspace = true }
 repository = { workspace = true }
 version = { workspace = true }
 categories = ["database"]
-keywords = ["s3", "recall"]
+keywords = ["recall", "s3"]
 
 [[bin]]
 name = "recall_s3"
@@ -52,9 +52,9 @@ tempfile = "3.13.0"
 homedir = "0.3.4"
 clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
-recall_sdk = { git = "ssh://git@github.com/recallnet/rust-recall.git", rev = "1cf1e17ea7ecdb4bf6c589b29b3eb20c74db6903" }
-recall_provider = { git = "ssh://git@github.com/recallnet/rust-recall.git", rev = "1cf1e17ea7ecdb4bf6c589b29b3eb20c74db6903" }
-recall_signer = { git = "ssh://git@github.com/recallnet/rust-recall.git", rev = "1cf1e17ea7ecdb4bf6c589b29b3eb20c74db6903" }
+recall_sdk = { git = "https://github.com/recallnet/rust-recall.git", rev = "8d4db6d5d22f5c0a7ed3388ad8b92aa72e0d8f11" }
+recall_provider = { git = "https://github.com/recallnet/rust-recall.git", rev = "8d4db6d5d22f5c0a7ed3388ad8b92aa72e0d8f11" }
+recall_signer = { git = "https://github.com/recallnet/rust-recall.git", rev = "8d4db6d5d22f5c0a7ed3388ad8b92aa72e0d8f11" }
 prometheus = { version = "0.13", features = ["process"] }
 prometheus_exporter = "0.8"
 lazy_static = "1.5"
@@ -64,7 +64,6 @@ lazy_static = "1.5"
 # depending on the same _without_ the "vendored" feature, because then the Docker build for
 # for ARM64 on AMD64 will fail, it won't find the OpenSSL installation.
 openssl = { version = "0.10", features = ["vendored"] }
-
 
 [dev-dependencies]
 anyhow = { version = "1.0.91", features = ["backtrace"] }
