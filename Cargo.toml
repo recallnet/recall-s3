@@ -4,11 +4,11 @@ resolver = "2"
 
 [workspace.package]
 authors = ["Textile <contact@textile.io"]
-description = "An S3 adapter for Textile IPC Object Storage."
+description = "An S3 adapter for Recall Object Storage."
 edition = "2021"
 homepage = "https://github.com/recallnet/recall-s3/"
 license = "MIT OR Apache-2.0"
 readme = "./README.md"
 repository = "https://github.com/recallnet/recall-s3/"
-keywords = ["s3", "ipc", "filecoin", "tableland"]
+keywords = ["recall", "s3"]
 version = "0.1.0"
