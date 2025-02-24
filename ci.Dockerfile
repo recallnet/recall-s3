@@ -33,11 +33,6 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
   rustup toolchain install ${RUST_VERSION}-aarch64-unknown-linux-gnu; \
   fi
 
-
-COPY /root-config /root/
-RUN sed -E 's|/home/ghrunner[0-9]?|/root|g' -i.bak /root/.ssh/config
-ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-
 RUN rm -rf ~/.ssh/known_hosts && \
     umask 077; mkdir -p ~/.ssh && \
     ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -47,7 +42,6 @@ COPY ./Cargo.toml ./Cargo.toml
 COPY ./lib ./lib
 
 RUN \
-  --mount=type=ssh \
   --mount=type=cache,target=/root/.cargo/registry,sharing=locked \
   --mount=type=cache,target=/root/.cargo/git,sharing=locked \
   --mount=type=cache,target=/app/target,sharing=locked \
