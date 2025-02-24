@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
   publish:
@@ -32,11 +31,6 @@ jobs:
         # Format the version string as sha-[short-commit-hash].
         VERSION="sha-$COMMIT_HASH"
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-    - name: Prepare git and ssh config for build context
-      run: |
-        mkdir root-config
-        cp -r ~/.gitconfig ~/.ssh root-config
 
     - name: Build and push
       uses: docker/build-push-action@v6
