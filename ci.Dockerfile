@@ -29,8 +29,8 @@ ARG TARGETARCH
 # Only installing MacOS specific libraries if necessary.
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
   apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross; \
+  rustup toolchain install ${RUST_VERSION}; \
   rustup target add aarch64-unknown-linux-gnu; \
-  rustup toolchain install ${RUST_VERSION}-aarch64-unknown-linux-gnu; \
   fi
 
 RUN rm -rf ~/.ssh/known_hosts && \
