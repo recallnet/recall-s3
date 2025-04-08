@@ -3165,11 +3165,10 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_blobs_shared"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "data-encoding",
- "fendermint_actor_machine",
  "fil_actors_runtime",
  "frc42_dispatch",
  "fvm_ipld_blockstore",
@@ -3177,6 +3176,7 @@ dependencies = [
  "fvm_shared",
  "num-derive 0.3.3",
  "num-traits",
+ "recall_actor_sdk",
  "recall_ipld",
  "serde",
 ]
@@ -3184,7 +3184,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_bucket"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "blake3",
@@ -3195,10 +3195,10 @@ dependencies = [
  "frc42_dispatch",
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
- "fvm_ipld_hamt",
  "fvm_shared",
  "num-derive 0.3.3",
  "num-traits",
+ "recall_actor_sdk",
  "recall_ipld",
  "recall_sol_facade",
  "serde",
@@ -3207,7 +3207,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_eam"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -3228,7 +3228,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_machine"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "fil_actor_adm",
@@ -3237,6 +3237,7 @@ dependencies = [
  "fvm_ipld_blockstore",
  "fvm_ipld_encoding",
  "fvm_shared",
+ "recall_actor_sdk",
  "recall_sol_facade",
  "serde",
 ]
@@ -3244,7 +3245,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_recall_config_shared"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "fendermint_actor_blobs_shared",
  "fil_actors_runtime",
@@ -3259,7 +3260,7 @@ dependencies = [
 [[package]]
 name = "fendermint_actor_timehub"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -3273,6 +3274,7 @@ dependencies = [
  "fvm_shared",
  "num-derive 0.3.3",
  "num-traits",
+ "recall_actor_sdk",
  "recall_sol_facade",
  "serde",
  "tracing",
@@ -3281,7 +3283,7 @@ dependencies = [
 [[package]]
 name = "fendermint_crypto"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -3293,7 +3295,7 @@ dependencies = [
 [[package]]
 name = "fendermint_eth_api"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3330,7 +3332,7 @@ dependencies = [
 [[package]]
 name = "fendermint_rpc"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3357,7 +3359,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_actor_interface"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -3385,7 +3387,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_core"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "cid",
  "fnv",
@@ -3399,7 +3401,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_encoding"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "cid",
  "fvm_shared",
@@ -3412,7 +3414,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_genesis"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "fendermint_actor_eam",
@@ -3430,7 +3432,7 @@ dependencies = [
 [[package]]
 name = "fendermint_vm_message"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "blake2b_simd",
@@ -3482,7 +3484,7 @@ checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 [[package]]
 name = "fil_actor_adm"
 version = "15.0.0-rc1"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -3502,7 +3504,7 @@ dependencies = [
 [[package]]
 name = "fil_actor_eam"
 version = "15.0.0-rc1"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -3523,7 +3525,7 @@ dependencies = [
 [[package]]
 name = "fil_actors_evm_shared"
 version = "15.0.0-rc1"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "fil_actors_runtime",
  "fvm_ipld_encoding",
@@ -3536,7 +3538,7 @@ dependencies = [
 [[package]]
 name = "fil_actors_runtime"
 version = "15.0.0-rc1"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -3765,7 +3767,7 @@ dependencies = [
 [[package]]
 name = "frc42_dispatch"
 version = "8.0.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "frc42_hasher",
  "frc42_macros",
@@ -3778,7 +3780,7 @@ dependencies = [
 [[package]]
 name = "frc42_hasher"
 version = "6.0.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "fvm_sdk",
  "fvm_shared",
@@ -3788,7 +3790,7 @@ dependencies = [
 [[package]]
 name = "frc42_macros"
 version = "6.0.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "blake2b_simd",
  "frc42_hasher",
@@ -5116,7 +5118,7 @@ dependencies = [
 [[package]]
 name = "ipc-api"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -5145,7 +5147,7 @@ dependencies = [
 [[package]]
 name = "ipc-types"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -5169,7 +5171,7 @@ dependencies = [
 [[package]]
 name = "ipc_actors_abis"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "ethers",
@@ -6012,7 +6014,7 @@ dependencies = [
 [[package]]
 name = "merkle-tree-rs"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "ethers",
@@ -7855,9 +7857,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "recall_actor_sdk"
+version = "0.1.0"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
+dependencies = [
+ "anyhow",
+ "fil_actors_evm_shared",
+ "fil_actors_runtime",
+ "fvm_ipld_encoding",
+ "fvm_sdk",
+ "fvm_shared",
+ "num-traits",
+ "recall_sol_facade",
+ "serde",
+]
+
+[[package]]
 name = "recall_ipld"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",
@@ -7875,7 +7893,7 @@ dependencies = [
 [[package]]
 name = "recall_provider"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/rust-recall.git?rev=e705c97fe194cc93bb8f462940ec2f6712ad841b#e705c97fe194cc93bb8f462940ec2f6712ad841b"
+source = "git+https://github.com/recallnet/rust-recall.git?rev=b431f53a589a9bd61535fcd424a098c3f33a651e#b431f53a589a9bd61535fcd424a098c3f33a651e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7947,7 +7965,7 @@ dependencies = [
 [[package]]
 name = "recall_sdk"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/rust-recall.git?rev=e705c97fe194cc93bb8f462940ec2f6712ad841b#e705c97fe194cc93bb8f462940ec2f6712ad841b"
+source = "git+https://github.com/recallnet/rust-recall.git?rev=b431f53a589a9bd61535fcd424a098c3f33a651e#b431f53a589a9bd61535fcd424a098c3f33a651e"
 dependencies = [
  "anyhow",
  "async-tempfile",
@@ -7986,7 +8004,7 @@ dependencies = [
 [[package]]
 name = "recall_signer"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/rust-recall.git?rev=e705c97fe194cc93bb8f462940ec2f6712ad841b#e705c97fe194cc93bb8f462940ec2f6712ad841b"
+source = "git+https://github.com/recallnet/rust-recall.git?rev=b431f53a589a9bd61535fcd424a098c3f33a651e#b431f53a589a9bd61535fcd424a098c3f33a651e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8004,7 +8022,7 @@ dependencies = [
 [[package]]
 name = "recall_sol_facade"
 version = "0.1.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-macro-expander",
@@ -10841,7 +10859,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vm_api"
 version = "1.0.0"
-source = "git+https://github.com/recallnet/ipc.git?rev=f58994947e96e5bc9a79cd9651e37af2ba82e290#f58994947e96e5bc9a79cd9651e37af2ba82e290"
+source = "git+https://github.com/recallnet/ipc.git?rev=dc4da8c14c541e1ef9e398a594e65660465c47f5#dc4da8c14c541e1ef9e398a594e65660465c47f5"
 dependencies = [
  "anyhow",
  "cid",

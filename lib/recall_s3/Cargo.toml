@@ -52,9 +52,9 @@ tempfile = "3.13.0"
 homedir = "0.3.4"
 clap-verbosity-flag = "2.2.2"
 ethers = "2.0.14"
-recall_sdk = { git = "https://github.com/recallnet/rust-recall.git", rev = "e705c97fe194cc93bb8f462940ec2f6712ad841b" }
-recall_provider = { git = "https://github.com/recallnet/rust-recall.git", rev = "e705c97fe194cc93bb8f462940ec2f6712ad841b" }
-recall_signer = { git = "https://github.com/recallnet/rust-recall.git", rev = "e705c97fe194cc93bb8f462940ec2f6712ad841b" }
+recall_sdk = { git = "https://github.com/recallnet/rust-recall.git", rev = "b431f53a589a9bd61535fcd424a098c3f33a651e" }
+recall_provider = { git = "https://github.com/recallnet/rust-recall.git", rev = "b431f53a589a9bd61535fcd424a098c3f33a651e" }
+recall_signer = { git = "https://github.com/recallnet/rust-recall.git", rev = "b431f53a589a9bd61535fcd424a098c3f33a651e" }
 prometheus = { version = "0.13", features = ["process"] }
 prometheus_exporter = "0.8"
 lazy_static = "1.5"
