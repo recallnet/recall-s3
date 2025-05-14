@@ -193,12 +193,10 @@ where
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
         let last_modified = try_!(SystemTime::now().duration_since(UNIX_EPOCH)).as_secs();
-        let address = wallet.address();
         let _ = machine
             .add_from_path(
                 self.provider.deref(),
                 &mut wallet,
-                address,
                 &key,
                 file.file_path(),
                 AddOptions {
@@ -307,12 +305,10 @@ where
             .await
             .map_err(|e| S3Error::new(S3ErrorCode::Custom(ByteString::from(e.to_string()))))?;
 
-        let address = wallet.address();
         let _ = machine
             .add_reader(
                 self.provider.deref(),
                 &mut wallet,
-                address,
                 &dst_key,
                 file,
                 total_size,
@@ -464,13 +460,11 @@ where
             None => unreachable!(),
         };
 
-        let address = wallet.address();
         let key = req.input.key;
         let tx = machine
             .delete(
                 self.provider.deref(),
                 &mut wallet,
-                address,
                 key.as_str(),
                 DeleteOptions::default(),
             )
@@ -509,13 +503,11 @@ where
             Some(w) => w.clone(),
             None => unreachable!(),
         };
-        let address = wallet.address();
         for object in req.input.delete.objects {
             let tx = machine
                 .delete(
                     self.provider.deref(),
                     &mut wallet,
-                    address,
                     object.key.as_str(),
                     DeleteOptions::default(),
                 )
@@ -941,12 +933,10 @@ where
             }
         };
 
-        let address = wallet.address();
         let _tx = machine
             .add_from_path(
                 self.provider.deref(),
                 &mut wallet,
-                address,
                 &key,
                 file.file_path(),
                 AddOptions {
